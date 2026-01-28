@@ -72,3 +72,15 @@
           playsinline
           width="100%">
         </video>
+    <p align="left"> • Hybrid (Linear + Analogous) for 3+ colors </p>
+        <video
+          src="https://github.com/user-attachments/assets/31e1d8f2-1e4c-42d5-9e04-c935a5a553de"
+          autoplay
+          loop
+          muted
+          playsinline
+          width="100%">
+        </video>
+
+
+
