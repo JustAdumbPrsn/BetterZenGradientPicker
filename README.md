@@ -22,3 +22,28 @@
 ###
 
 <h2 align="left">Features :)</h2>
+
+<h3 align="left">1. Up to 6 colors </h3>
+
+<video
+  src="https://github.com/user-attachments/assets/ecce00f1-fea6-44fd-a4e3-7c5f390c24af"
+  autoplay
+  loop
+  muted
+  playsinline
+  width="100%">
+</video>
+
+<h3 align="left">2. Save your gradient configuration! </h3>
+<video
+  src="https://github.com/user-attachments/assets/546541e8-9b33-4402-aba5-ebd8e6c16815"
+  autoplay
+  loop
+  muted
+  playsinline
+  width="100%">
+</video>
+
+
+
+
