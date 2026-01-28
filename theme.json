@@ -16,6 +16,7 @@
       "include": ["chrome://browser/content/browser.xhtml"]
     }
   },
+  js: true,
   "tags": [
     "Javascript"
   ],
