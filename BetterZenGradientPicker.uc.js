@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name           Zen Color Picker Mods
-// @version        5.1.0
-// @description    Modular Enhancements for Zen Browser's Color Picker with strict per-workspace isolation.
-// @author         Antigravity
+// @name           BetterZenGradientPicker
+// @version        1.0
+// @description    A Sine mod which aims to overhaul Zen's gradient picker with tons of new features :))
+// @author         JustAdumbPrsn
 // @include        main
 // ==/UserScript==
 
