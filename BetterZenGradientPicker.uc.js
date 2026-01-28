@@ -740,7 +740,7 @@ class RotationModule {
         document.removeEventListener("mousemove", this._boundMouseMove);
         document.removeEventListener("mouseup", this._boundMouseUp);
         this.applyRotation();
-        setTimeout(() => { this._hadRecentDrag = false; }, 50);
+        setTimeout(() => { this._hadRecentDrag = false; }, 200);
     }
 
     get activeWorkspace() {
@@ -1187,11 +1187,15 @@ class FavoritesModule {
         opacitySlider?.addEventListener("input", () => self.updateButtonState());
 
         const textureWrapper = document.getElementById("PanelUI-zen-gradient-generator-texture-wrapper");
+        let _hadRecentTextureDrag = false;
         textureWrapper?.addEventListener("mousedown", () => {
+            const onMove = () => { _hadRecentTextureDrag = true; };
             const up = () => {
-                self.updateButtonState();
+                setTimeout(() => { _hadRecentTextureDrag = false; }, 200);
+                window.removeEventListener("mousemove", onMove);
                 window.removeEventListener("mouseup", up);
             };
+            window.addEventListener("mousemove", onMove);
             window.addEventListener("mouseup", up);
         });
 
@@ -1213,7 +1217,7 @@ class FavoritesModule {
             textureWrapper.addEventListener("mouseleave", () => textureWrapper.classList.remove("knob-hover"));
 
             textureWrapper.addEventListener("click", (e) => {
-                if (!textureWrapper.classList.contains("knob-hover")) return;
+                if (!textureWrapper.classList.contains("knob-hover") || _hadRecentTextureDrag) return;
                 this._animateState(picker.currentOpacity, 0);
                 self.updateButtonState();
             });
@@ -1490,5 +1494,5 @@ class FavoritesModule {
 if (document.readyState === "complete") {
     ZenPickerMods.init();
 } else {
-    window.addEventListener("load", ZenPickerMods.init);
+    window.addEventListener("load", () => ZenPickerMods.init());
 }
