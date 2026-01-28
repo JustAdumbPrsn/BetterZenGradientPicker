@@ -24,29 +24,46 @@
 <h2 align="left">Features :)</h2>
 
 <h3 align="left">1. Up to 6 colors </h3>
-
-<video
-  src="https://github.com/user-attachments/assets/ecce00f1-fea6-44fd-a4e3-7c5f390c24af"
-  autoplay
-  loop
-  muted
-  playsinline
-  width="100%">
-</video>
+    <video
+      src="https://github.com/user-attachments/assets/ecce00f1-fea6-44fd-a4e3-7c5f390c24af"
+      autoplay
+      loop
+      muted
+      playsinline
+      width="100%">
+    </video>
 
 <h3 align="left">2. Save your gradient configuration! </h3>
-<video
-  src="https://github.com/user-attachments/assets/546541e8-9b33-4402-aba5-ebd8e6c16815"
-  autoplay
-  loop
-  muted
-  playsinline
-  width="100%">
-</video>
-
+    <video
+      src="https://github.com/user-attachments/assets/546541e8-9b33-4402-aba5-ebd8e6c16815"
+      autoplay
+      loop
+      muted
+      playsinline
+      width="100%">
+    </video>
 
 <h3 align="left">3. Rotation Knob </h3>
+    <video
+      src="https://github.com/user-attachments/assets/5db259c6-281d-4259-87a8-d81d68c3a604"
+      autoplay
+      loop
+      muted
+      playsinline
+      width="100%">
+    </video>
 
+<h3 align="left">4. New Color Harmonies </h3>
+    <p align="left"> • Floating Mode! </p>
+        <video
+          src="https://github.com/user-attachments/assets/213a74e5-7c42-48c7-974b-2447c5d4b878"
+          autoplay
+          loop
+          muted
+          playsinline
+          width="100%">
+        </video>
 
+       
 
-
+ 
