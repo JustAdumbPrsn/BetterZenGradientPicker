@@ -53,7 +53,17 @@
       width="100%">
     </video>
 
-<h3 align="left">4. New Color Harmonies </h3>
+<h3 align="left">4. Palette Switcher </h3>
+    <video
+      src="https://github.com/user-attachments/assets/3924dc3c-7b32-41b8-9cca-1f0cde47faef"
+      autoplay
+      loop
+      muted
+      playsinline
+      width="100%">
+    </video>
+
+<h3 align="left">5. New Color Harmonies </h3>
     <p align="left"> • Floating Mode! </p>
         <video
           src="https://github.com/user-attachments/assets/213a74e5-7c42-48c7-974b-2447c5d4b878"
