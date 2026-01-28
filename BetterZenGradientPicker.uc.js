@@ -1487,10 +1487,8 @@ class FavoritesModule {
 }
 
 // Start Execution
-if (window.gBrowserInit?.delayedStartupFinished) ZenPickerMods.init();
-else Services.obs.addObserver(function l(s, t) {
-    if (t === "browser-delayed-startup-finished") {
-        Services.obs.removeObserver(l, t);
-        ZenPickerMods.init();
-    }
-}, "browser-delayed-startup-finished");
+if (document.readyState === "complete") {
+    ZenPickerMods.init();
+} else {
+    window.addEventListener("load", ZenPickerMods.init);
+}
