@@ -12,3 +12,13 @@
 </div>
 
 ###
+
+<h2 align="left">Why Does This Exist?</h2>
+
+###
+
+<p align="left">Zen's current gradient picker is great, but it is limited and does not have many features natively.<br><br>I constantly get annoyed by lack of control i have over the graadients created, that is why i made this mod to give user mode control and try to provide an overall better experience to users<br>This is an experimental JS mod which i cant guarentee that it is 100% reliable but as always I have tried my best to make it feel as native as possible. If you experience unusual bugs then please let me know...</p>
+
+###
+
+<h2 align="left">Features :)</h2>
