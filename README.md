@@ -63,7 +63,12 @@
           playsinline
           width="100%">
         </video>
-
-       
-
- 
+    <p align="left"> • Linear (For 2 & 3 colors) </p>
+        <video
+          src="https://github.com/user-attachments/assets/7bd5a18d-01b8-4ae5-874a-e50af06a975f"
+          autoplay
+          loop
+          muted
+          playsinline
+          width="100%">
+        </video>
