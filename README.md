@@ -92,5 +92,7 @@
           width="100%">
         </video>
 
+<h2 align="left">Installation</h2>
 
-
+1. Install [Sine](https://github.com/CosmoCreeper/Sine) if you dont already have it.
+2. Go to settings > Sine Mods (or Cosine if you are using that), Here you will see the marketplace of Sine. Search for "BetterZenGradientPicker" and install this mod directly from there.
