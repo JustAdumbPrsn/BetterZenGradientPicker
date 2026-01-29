@@ -8,7 +8,7 @@
 ###
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/c7363c97-534d-43b3-8ebb-0219d4e17867" width="800" />
+  <img src="https://github.com/user-attachments/assets/5d280afc-6c6b-4d38-bdef-09dc4627885b" width="800" />
 </div>
 
 ###
@@ -53,7 +53,17 @@
       width="100%">
     </video>
 
-<h3 align="left">4. Palette Switcher </h3>
+<h3 align="left">4. (New) Lightness Slider! ~ Added in v1.3</h3>
+    <video
+      src="https://github.com/user-attachments/assets/9863c01e-6c02-413c-b000-4a954ae41d5c"
+      autoplay
+      loop
+      muted
+      playsinline
+      width="100%">
+    </video>
+
+<h3 align="left">5. Palette Switcher </h3>
     <video
       src="https://github.com/user-attachments/assets/3924dc3c-7b32-41b8-9cca-1f0cde47faef"
       autoplay
@@ -63,7 +73,7 @@
       width="100%">
     </video>
 
-<h3 align="left">5. New Color Harmonies </h3>
+<h3 align="left">6. New Color Harmonies </h3>
     <p align="left"> • Floating Mode! </p>
         <video
           src="https://github.com/user-attachments/assets/213a74e5-7c42-48c7-974b-2447c5d4b878"
