@@ -73,7 +73,17 @@
       width="100%">
     </video>
 
-<h3 align="left">6. New Color Harmonies </h3>
+<h3 align="left">6. (Optional) Dynamic Light & Dark mode depending on gradient! </h3>
+    <video
+      src="https://github.com/user-attachments/assets/0ed89385-6dda-4ca6-b172-1e3a1559c842"
+      autoplay
+      loop
+      muted
+      playsinline
+      width="100%">
+    </video>
+
+<h3 align="left">7. New Color Harmonies </h3>
     <p align="left"> • Floating Mode! </p>
         <video
           src="https://github.com/user-attachments/assets/213a74e5-7c42-48c7-974b-2447c5d4b878"
