@@ -19,7 +19,13 @@
     {
         "type": "checkbox",
         "property": "zen.theme.text-lock",
-        "label": "Text Lock: Browser text color (sidebar/toolbar) will strictly follow the browser's light/dark mode rather than gradient lightness.",
+        "label": "Text Color Lock: Browser text color (sidebar/toolbar) will strictly follow the browser's light/dark mode rather than gradient lightness.",
+        "margin": "12px 0"
+    },
+    {
+        "type": "checkbox",
+        "property": "zen.theme.lightness-inversion",
+        "label": "Lightness Inversion: Automatically inverts gradient lightness to match browser theme (e.g., dark gradients in dark mode).",
         "margin": "12px 0"
     }
 ]
