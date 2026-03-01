@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           BetterZenGradientPicker
-// @version        1.4
+// @version        1.5
 // @description    A Sine mod which aims to overhaul Zen's gradient picker with tons of new features :))
 // @author         JustAdumbPrsn
 // @include        main
@@ -1750,9 +1750,11 @@ class PaletteModule {
  */
 class DynamicThemeModule {
     static PREF = "zen.theme.dynamic-theme-switching";
+    static TEXT_LOCK_PREF = "zen.theme.text-lock";
 
     constructor() {
         this._enabled = false;
+        this._textLockEnabled = false;
         this._lastIsDark = null;
     }
 
@@ -1768,11 +1770,58 @@ class DynamicThemeModule {
         }
 
         this._loadPref();
+        this._setupObservers(picker);
         this.patchPicker(picker);
+    }
+
+    _setupObservers(picker) {
+        const self = this;
+        this._prefObserver = {
+            observe(subject, topic, data) {
+                if (topic !== "nsPref:changed") return;
+                self._loadPref();
+                if (picker.updateCurrentWorkspace) {
+                    picker.updateCurrentWorkspace();
+                }
+            }
+        };
+
+        Services.prefs.addObserver(DynamicThemeModule.TEXT_LOCK_PREF, this._prefObserver);
+        Services.prefs.addObserver("zen.view.window.scheme", this._prefObserver);
+
+        // System theme listener
+        const mql = window.matchMedia("(prefers-color-scheme: dark)");
+        this._sysListener = () => {
+            if (self._textLockEnabled && picker.updateCurrentWorkspace) {
+                picker.updateCurrentWorkspace();
+            }
+        };
+        mql.addEventListener("change", this._sysListener);
+
+        // Cleanup on window unload (optional but good practice for uc.js)
+        window.addEventListener("unload", () => {
+            Services.prefs.removeObserver(DynamicThemeModule.TEXT_LOCK_PREF, this._prefObserver);
+            Services.prefs.removeObserver("zen.view.window.scheme", this._prefObserver);
+            mql.removeEventListener("change", this._sysListener);
+        }, { once: true });
     }
 
     patchPicker(picker) {
         const self = this;
+
+        // 0. Patch shouldBeDarkMode (Covers text contrast logic)
+        const origShouldBeDark = picker.shouldBeDarkMode.bind(picker);
+        picker.shouldBeDarkMode = function (accentColor) {
+            // Re-read for responsiveness
+            try {
+                self._textLockEnabled = Services.prefs.getBoolPref(DynamicThemeModule.TEXT_LOCK_PREF, false);
+            } catch (e) { }
+
+            if (self._textLockEnabled) {
+                return this.isDarkMode;
+            }
+            return origShouldBeDark(accentColor);
+        };
 
         // 1. Patch updateCurrentWorkspace (Covers palette changes, dot changes, native presets)
         const origUpdate = picker.updateCurrentWorkspace.bind(picker);
@@ -1804,6 +1853,11 @@ class DynamicThemeModule {
             this._enabled = Services.prefs.getBoolPref(DynamicThemeModule.PREF, false);
         } catch (e) {
             this._enabled = false;
+        }
+        try {
+            this._textLockEnabled = Services.prefs.getBoolPref(DynamicThemeModule.TEXT_LOCK_PREF, false);
+        } catch (e) {
+            this._textLockEnabled = false;
         }
     }
 
