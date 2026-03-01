@@ -15,5 +15,11 @@
         "property": "zen.theme.dynamic-theme-switching",
         "label": "Dynamic Theme: Browser will automatically switch between light and dark mode depending on gradient lightness. (Note: you must have light-dark switched to auto for this to work)",
         "margin": "12px 0"
+    },
+    {
+        "type": "checkbox",
+        "property": "zen.theme.text-lock",
+        "label": "Text Lock: Browser text color (sidebar/toolbar) will strictly follow the browser's light/dark mode rather than gradient lightness.",
+        "margin": "12px 0"
     }
 ]
