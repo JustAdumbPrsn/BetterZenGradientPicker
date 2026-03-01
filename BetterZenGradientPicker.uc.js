@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           BetterZenGradientPicker
-// @version        1.5
+// @version        1.4
 // @description    A Sine mod which aims to overhaul Zen's gradient picker with tons of new features :))
 // @author         JustAdumbPrsn
 // @include        main
@@ -1499,7 +1499,24 @@ class PaletteModule {
 
         // High performance local update while dragging
         slider.addEventListener("input", (e) => {
-            const val = parseFloat(e.target.value); // Use parseFloat for "any" step
+            let val = parseFloat(e.target.value); // Use parseFloat for "any" step
+
+            // Enforce Lightness Inversion if enabled
+            if (ZenPickerMods.modules) {
+                const dynamicMod = ZenPickerMods.modules.find(m => m instanceof DynamicThemeModule);
+                if (dynamicMod && dynamicMod._inversionEnabled) {
+                    const isDark = this.picker.isDarkMode;
+                    // Dark theme requires dark gradients (val <= 50). Light theme requires light gradients (val >= 50)
+                    if (isDark && val > 50) val = 50;
+                    else if (!isDark && val < 50) val = 50;
+
+                    // Update slider visually to the constrained value
+                    if (val !== parseFloat(e.target.value)) {
+                        e.target.value = val;
+                    }
+                }
+            }
+
             e.target.setAttribute("tooltiptext", `Lightness: ${Math.round(val)}%`);
             this.updateLightnessVisuals(val);
 
@@ -1514,18 +1531,6 @@ class PaletteModule {
 
             // 1. PROJECT: Direct Dot & Background projection (Fast)
             if (this.picker.dots.length) {
-                // Access via main controller or direct instance if possible.
-                // Since this listener is inside PaletteModule, we can call directly.
-                // But fastProjectLightness is on ZenPickerMods (this.picker is unrelated there?)
-                // Wait, fastProjectLightness is defined in PaletteModule?
-                // Let's check the context of 'this' in fastProjectLightness usage.
-
-                // NO, fastProjectLightness is defined in PaletteModule in the file view!
-                // Let me verify the class structure.
-                // Line 943: class PaletteModule
-                // Line 1604: fastProjectLightness(lightness) { ... }
-                // So fastProjectLightness is a method of PaletteModule.
-
                 this._internalUpdate = true;
                 try {
                     this.fastProjectLightness(val);
@@ -1537,7 +1542,22 @@ class PaletteModule {
 
         // Heavy Sync only on release (change)
         slider.addEventListener("change", (e) => {
-            const val = parseFloat(e.target.value);
+            let val = parseFloat(e.target.value);
+
+            // Enforce Lightness Inversion if enabled
+            if (ZenPickerMods.modules) {
+                const dynamicMod = ZenPickerMods.modules.find(m => m instanceof DynamicThemeModule);
+                if (dynamicMod && dynamicMod._inversionEnabled) {
+                    const isDark = this.picker.isDarkMode;
+                    if (isDark && val > 50) val = 50;
+                    else if (!isDark && val < 50) val = 50;
+
+                    if (val !== parseFloat(e.target.value)) {
+                        e.target.value = val;
+                    }
+                }
+            }
+
             this._internalUpdate = true; // Prevent mode reset during sync
             try {
                 this.forceNativeLightness(val);
@@ -1751,10 +1771,12 @@ class PaletteModule {
 class DynamicThemeModule {
     static PREF = "zen.theme.dynamic-theme-switching";
     static TEXT_LOCK_PREF = "zen.theme.text-lock";
+    static INVERSION_PREF = "zen.theme.lightness-inversion";
 
     constructor() {
         this._enabled = false;
         this._textLockEnabled = false;
+        this._inversionEnabled = false;
         this._lastIsDark = null;
     }
 
@@ -1787,6 +1809,7 @@ class DynamicThemeModule {
         };
 
         Services.prefs.addObserver(DynamicThemeModule.TEXT_LOCK_PREF, this._prefObserver);
+        Services.prefs.addObserver(DynamicThemeModule.INVERSION_PREF, this._prefObserver);
         Services.prefs.addObserver("zen.view.window.scheme", this._prefObserver);
 
         // System theme listener
@@ -1795,12 +1818,16 @@ class DynamicThemeModule {
             if (self._textLockEnabled && picker.updateCurrentWorkspace) {
                 picker.updateCurrentWorkspace();
             }
+            if (self._inversionEnabled) {
+                self.checkAndApplyInversion(picker);
+            }
         };
         mql.addEventListener("change", this._sysListener);
 
         // Cleanup on window unload (optional but good practice for uc.js)
         window.addEventListener("unload", () => {
             Services.prefs.removeObserver(DynamicThemeModule.TEXT_LOCK_PREF, this._prefObserver);
+            Services.prefs.removeObserver(DynamicThemeModule.INVERSION_PREF, this._prefObserver);
             Services.prefs.removeObserver("zen.view.window.scheme", this._prefObserver);
             mql.removeEventListener("change", this._sysListener);
         }, { once: true });
@@ -1826,6 +1853,11 @@ class DynamicThemeModule {
         // 1. Patch updateCurrentWorkspace (Covers palette changes, dot changes, native presets)
         const origUpdate = picker.updateCurrentWorkspace.bind(picker);
         picker.updateCurrentWorkspace = function (...args) {
+            // Check and enforce inversion BEFORE saving or syncing
+            if (self._inversionEnabled && !self._isInverting) {
+                self.checkAndApplyInversion(this, true); // true = silent, don't re-trigger update
+            }
+
             const res = origUpdate.apply(this, args);
             setTimeout(() => {
                 try {
@@ -1841,6 +1873,9 @@ class DynamicThemeModule {
             const res = origOnWsChange.apply(this, args);
             setTimeout(() => {
                 try {
+                    if (self._inversionEnabled && !self._isInverting) {
+                        self.checkAndApplyInversion(this, false);
+                    }
                     self.checkFromPickerState(this);
                 } catch (e) { console.error("DynamicTheme ws-change hook error", e); }
             }, 50);
@@ -1858,6 +1893,11 @@ class DynamicThemeModule {
             this._textLockEnabled = Services.prefs.getBoolPref(DynamicThemeModule.TEXT_LOCK_PREF, false);
         } catch (e) {
             this._textLockEnabled = false;
+        }
+        try {
+            this._inversionEnabled = Services.prefs.getBoolPref(DynamicThemeModule.INVERSION_PREF, false);
+        } catch (e) {
+            this._inversionEnabled = false;
         }
     }
 
@@ -1902,6 +1942,10 @@ class DynamicThemeModule {
             return { ...dot, c: rgb };
         });
 
+        if (this._inversionEnabled) {
+            this.checkAndApplyInversion(picker);
+        }
+
         this.checkAndApplyTheme(computedDots, picker);
     }
 
@@ -1943,6 +1987,55 @@ class DynamicThemeModule {
 
         } catch (e) {
             // calculated color might be invalid during drag transition
+        }
+    }
+
+    checkAndApplyInversion(picker, silent = false) {
+        if (!this._inversionEnabled || !picker.dots || !picker.dots.length) return;
+
+        // Prevent recursive loop if we are already inverting
+        if (this._isInverting) return;
+
+        const isDark = picker.isDarkMode;
+        // Get current lightness, defaulting to 50
+        const currentL = picker.dots[0].lightness !== undefined ? picker.dots[0].lightness : 50;
+
+        // Ensure we don't invert an already inverted value that is correct for the theme
+        // Dark theme requires dark gradients (val <= 50). Light theme requires light gradients (val >= 50)
+        // If it's 50 (middle), it's neutral, no need to invert.
+        const needsInversion = (isDark && currentL > 50) || (!isDark && currentL < 50);
+
+        if (needsInversion) {
+            this._isInverting = true;
+            try {
+                // If it's over the limit, mirror it across the 50% midpoint
+                const newL = 100 - currentL;
+
+                // First apply to picker array directly
+                picker.dots.forEach(d => { d.lightness = newL; });
+
+                if (ZenPickerMods.paletteMod) {
+                    const slider = document.getElementById("zen-picker-lightness-slider");
+                    if (slider && !silent) {
+                        ZenPickerMods.paletteMod.animateSliderValue(slider, newL);
+                    } else if (slider) {
+                        slider.value = newL;
+                        ZenPickerMods.paletteMod.updateLightnessVisuals(newL);
+                    }
+                    ZenPickerMods.paletteMod.fastProjectLightness(newL);
+                }
+
+                if (!silent) {
+                    // Tell the native picker that the workspace changed so it saves to persistence.
+                    // Doing this slightly later prevents it from catching mid-animation values
+                    setTimeout(() => {
+                        picker.updateCurrentWorkspace(false);
+                    }, 50);
+                }
+            } finally {
+                // Allow a small cooldown before inversion can trigger again 
+                setTimeout(() => { this._isInverting = false; }, 200);
+            }
         }
     }
 
