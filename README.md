@@ -39,7 +39,7 @@
   <tr>
     <td>
       <h3>Rotation Knob</h3>
-      <video src="https://github.com/user-attachments/assets/e1c1d70b-86e6-4267-8ad2-d783c4d51bd9"
+      <video src="https://github.com/user-attachments/assets/adb961f5-2cd7-4025-8798-d28fb52986de"
         autoplay loop muted playsinline width="100%"></video>
     </td>
     <td>
