@@ -3513,7 +3513,7 @@ class FavoritesModule {
                 pointer-events: none;
             }
             #zen-picker-favorite-save:hover::before {
-                opacity: 0.8;
+                opacity: 1;
             }
             #zen-picker-favorite-save.is-favorite::before {
                 background: #f44336 !important;
@@ -3798,7 +3798,9 @@ class FavoritesModule {
     if (!placeholder || !pagesWrapper) return;
     this._clearDragStyles(true);
 
-    let slots = Array.from(pagesWrapper.querySelectorAll(".zen-picker-favorite-box"));
+    let slots = Array.from(
+      pagesWrapper.querySelectorAll(".zen-picker-favorite-box"),
+    );
 
     const swapWithNeighbor = (direction) => {
       const currentSlots = Array.from(
@@ -3806,7 +3808,8 @@ class FavoritesModule {
       );
       const currentIndex = currentSlots.indexOf(placeholder);
       const neighborIndex = currentIndex + direction;
-      if (neighborIndex < 0 || neighborIndex >= currentSlots.length) return false;
+      if (neighborIndex < 0 || neighborIndex >= currentSlots.length)
+        return false;
       const neighbor = currentSlots[neighborIndex];
       if (!neighbor || neighbor === placeholder) return false;
 
@@ -3850,7 +3853,9 @@ class FavoritesModule {
     }
     if (!hoveredSlot) return;
 
-    slots = Array.from(pagesWrapper.querySelectorAll(".zen-picker-favorite-box"));
+    slots = Array.from(
+      pagesWrapper.querySelectorAll(".zen-picker-favorite-box"),
+    );
     const hoveredIndex = slots.indexOf(hoveredSlot);
     const currentIndex = slots.indexOf(placeholder);
     if (hoveredIndex < 0 || currentIndex < 0) return;
@@ -3905,14 +3910,14 @@ class FavoritesModule {
     if (placeholderIndex < 0) return -1;
     return slots
       .slice(0, placeholderIndex)
-      .filter((slot) => !slot.classList.contains("is-ghost"))
-      .length;
+      .filter((slot) => !slot.classList.contains("is-ghost")).length;
   }
 
   _reorderFavorites(fromIndex, toIndex) {
     const favs = [...this._getFavs()];
     if (!favs.length) return false;
-    if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return false;
+    if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex))
+      return false;
     if (fromIndex < 0 || fromIndex >= favs.length) return false;
 
     let insertAt = Math.max(0, Math.min(toIndex, favs.length));
