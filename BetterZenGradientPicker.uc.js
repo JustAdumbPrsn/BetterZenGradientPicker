@@ -6,8 +6,6 @@
 // @include        main
 // ==/UserScript==
 
-const SCRIPT_URL = Components.stack.filename;
-
 /**
  * ZenPickerMods - Main Controller
  */
@@ -15,7 +13,7 @@ const ZenPickerMods = {
   modules: [],
 
   init() {
-    this.log("Initializing Main Controller...");
+    this.log("initializing");
     const pm = new PaletteModule();
     const favs = new FavoritesModule();
     this.modules.push(new OpacityModule());
@@ -28,59 +26,6 @@ const ZenPickerMods = {
     // Expose modules for cross-module usage
     this.paletteMod = pm;
     this.favoritesMod = favs;
-
-    // Calculate dynamic base URL for assets
-    try {
-      this.log("Script URL:", SCRIPT_URL);
-      if (SCRIPT_URL.startsWith("file:///")) {
-        const lastSlash = Math.max(
-          SCRIPT_URL.lastIndexOf("/"),
-          SCRIPT_URL.lastIndexOf("\\"),
-        );
-        this.baseURL = SCRIPT_URL.substring(0, lastSlash + 1).replace(
-          /\\/g,
-          "/",
-        );
-      } else if (SCRIPT_URL.startsWith("chrome://")) {
-        try {
-          let uri = Services.io.newURI(SCRIPT_URL, null, null);
-          let fileURL = Cc["@mozilla.org/chrome/chrome-registry;1"]
-            .getService(Ci.nsIChromeRegistry)
-            .convertChromeURL(uri).spec;
-          this.log("Resolved Chrome URL to:", fileURL);
-          const lastSlash = Math.max(
-            fileURL.lastIndexOf("/"),
-            fileURL.lastIndexOf("\\"),
-          );
-          this.baseURL = fileURL
-            .substring(0, lastSlash + 1)
-            .replace(/\\/g, "/");
-        } catch (e) {
-          this.error("Failed to resolve chrome URL:", e);
-          this.baseURL = SCRIPT_URL.substring(
-            0,
-            SCRIPT_URL.lastIndexOf("/") + 1,
-          );
-        }
-      } else {
-        // Last ditch effort: try to strip filename from SCRIPT_URL
-        const lastSlash = Math.max(
-          SCRIPT_URL.lastIndexOf("/"),
-          SCRIPT_URL.lastIndexOf("\\"),
-        );
-        if (lastSlash > -1) {
-          this.baseURL = SCRIPT_URL.substring(0, lastSlash + 1);
-        } else {
-          this.baseURL = "chrome://browser/content/";
-        }
-      }
-    } catch (e) {
-      this.baseURL = "chrome://browser/content/";
-    }
-    console.log(
-      "[BetterZenGradientPicker] Base URL finalized as:",
-      this.baseURL,
-    );
 
     this.waitForZen();
   },
