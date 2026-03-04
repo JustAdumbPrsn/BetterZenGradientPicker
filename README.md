@@ -43,8 +43,8 @@
         autoplay loop muted playsinline width="100%"></video>
     </td>
     <td>
-      <h3>Lightness Slider <sub>(v1.3)</sub></h3>
-      <video src="https://github.com/user-attachments/assets/9863c01e-6c02-413c-b000-4a954ae41d5c"
+      <h3>Lightness Slider!</h3>
+      <video src="https://github.com/user-attachments/assets/56196d3d-95cb-4309-b185-3d9f73f8429e"
         autoplay loop muted playsinline width="100%"></video>
     </td>
   </tr>
