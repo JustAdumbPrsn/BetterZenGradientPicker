@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           BetterZenGradientPicker
-// @version        1.5
+// @version        1.6
 // @description    A Sine mod which aims to overhaul Zen's gradient picker with tons of new features :))
 // @author         JustAdumbPrsn
 // @include        main
@@ -230,6 +230,106 @@ const ZenPickerMods = {
       } catch (e) {
         ZenPickerMods.error("Failed to write favorites file", e);
       }
+    },
+  },
+
+  Toast: {
+    _timers: new Map(),
+
+    _reflow(container) {
+      if (!container) return;
+      const toasts = Array.from(container.children).filter((node) =>
+        node?.classList?.contains("zen-toast"),
+      );
+      let top = 0;
+      const spacing = 8;
+      toasts.forEach((toast) => {
+        // Use layout height (not transformed height) so spacing stays stable
+        // while scale/opacity animations are running.
+        const height = Math.max(
+          42,
+          Math.round(toast.offsetHeight || toast.clientHeight || 42),
+        );
+        toast.style.transition = "top 0.22s cubic-bezier(0.22, 1, 0.36, 1)";
+        toast.style.top = `${top}px`;
+        top += height + spacing;
+      });
+    },
+
+    show(message, toastId = "zen-gradient-toast", duration = 1800) {
+      try {
+        const ui = window.gZenUIManager;
+        const container = document.getElementById("zen-toast-container");
+        if (!container) return;
+
+        const id = String(toastId || "zen-gradient-toast");
+        const existing = container.querySelector(
+          `.zen-toast[data-zen-toast-id="${id}"]`,
+        );
+        if (existing) {
+          existing.remove();
+          this._reflow(container);
+        }
+
+        const prevTimer = this._timers.get(id);
+        if (prevTimer) {
+          clearTimeout(prevTimer);
+          this._timers.delete(id);
+        }
+
+        const wrapper = document.createXULElement("hbox");
+        wrapper.classList.add("zen-toast");
+        wrapper.setAttribute("data-zen-toast-id", id);
+        const vbox = document.createXULElement("vbox");
+        const label = document.createXULElement("label");
+        label.textContent = message;
+        vbox.appendChild(label);
+        wrapper.appendChild(vbox);
+
+        container.removeAttribute("hidden");
+        container.appendChild(wrapper);
+        this._reflow(container);
+
+        const finish = () => {
+          wrapper.remove();
+          this._reflow(container);
+          if (!container.querySelector(".zen-toast")) {
+            container.setAttribute("hidden", true);
+          }
+        };
+
+        const closeToast = () => {
+          this._timers.delete(id);
+          if (Services.prefs.getBoolPref("ui.popup.disable_autohide")) return;
+          if (ui?.motion?.animate) {
+            ui.motion
+              .animate(
+                wrapper,
+                { opacity: [1, 0], scale: [1, 0.5] },
+                { duration: 0.2, bounce: 0 },
+              )
+              .then(finish);
+          } else {
+            finish();
+          }
+        };
+
+        if (!wrapper.style.transform) {
+          wrapper.style.transform = "scale(0)";
+        }
+        if (ui?.motion?.animate) {
+          ui.motion.animate(
+            wrapper,
+            { scale: 1 },
+            { type: "spring", bounce: 0.2, duration: 0.5 },
+          );
+        } else {
+          wrapper.style.transform = "scale(1)";
+        }
+
+        const timer = setTimeout(closeToast, duration);
+        this._timers.set(id, timer);
+      } catch (e) {}
     },
   },
 
@@ -1676,7 +1776,23 @@ class PaletteModule {
   cyclePalette() {
     const currentIdx = this.getCurrentModeIndex();
     const nextIdx = (currentIdx + 1) % PaletteModule.MODES.length;
-    this.applyMode(PaletteModule.MODES[nextIdx]);
+    const nextMode = PaletteModule.MODES[nextIdx];
+    this.applyMode(nextMode);
+    ZenPickerMods.Toast.show(
+      `Switched to ${this._getPaletteToastLabel(nextMode)} palette`,
+      "zen-palette-switched-toast",
+    );
+  }
+
+  _getPaletteToastLabel(mode) {
+    if (!mode?.id) return "Vibrant";
+    if (mode.id === "full") return "Full";
+    if (mode.id === "bw") return "B&W";
+    if (mode.id === "pastel") return "Pastel";
+    if (mode.id === "dark") return "Dark";
+    if (mode.id === "deep-dark") return "Extra Dark";
+    if (mode.id === "vibrant") return "Vibrant";
+    return mode.label || "Vibrant";
   }
 
   applyMode(mode) {
@@ -2272,6 +2388,7 @@ class DynamicThemeModule {
     this._loadPref();
     this._setupObservers(picker);
     this.patchPicker(picker);
+    this._setupPresetPreviewHook(picker);
   }
 
   _setupObservers(picker) {
@@ -2320,7 +2437,11 @@ class DynamicThemeModule {
       // Ensures any final UI artifacts are cleaned up and the workspace is saved.
       setTimeout(() => {
         if (picker.updateCurrentWorkspace) {
-          picker.updateCurrentWorkspace(false);
+          // If we just did a closed-panel inversion, skip the destructive
+          // full rebuild (skipSave=false triggers recalculateDots which
+          // calls getColorFromPosition with 0x0 panel rect).
+          const pickerOpen = self._isPickerSurfaceReady(picker);
+          picker.updateCurrentWorkspace(pickerOpen ? false : true);
         }
       }, 1000);
     };
@@ -2526,68 +2647,236 @@ class DynamicThemeModule {
     };
   }
 
-  _showInversionToast() {
-    try {
-      const ui = window.gZenUIManager;
-      const container = document.getElementById("zen-toast-container");
-      if (!ui || !container) return;
+  _readDotRgb(dot) {
+    if (dot?.c && Array.isArray(dot.c) && dot.c.length === 3) {
+      return dot.c.map((v) => Math.min(255, Math.max(0, Number(v) || 0)));
+    }
+    const cssColor = dot?.element?.style?.getPropertyValue(
+      "--zen-theme-picker-dot-color",
+    );
+    if (!cssColor) return null;
+    const nums = cssColor.match(/\d+/g);
+    if (!nums || nums.length < 3) return null;
+    return nums.slice(0, 3).map((n) => Math.min(255, Math.max(0, Number(n))));
+  }
 
-      const existing = container.querySelector(
-        '.zen-toast[data-zen-toast-id="zen-gradient-inverted-toast"]',
-      );
-      if (existing) existing.remove();
+  _projectScalarLightnessClosed(picker, lightness) {
+    const docElem = document.documentElement;
+    const currentAlgo =
+      picker.useAlgo ||
+      picker.currentWorkspace?.theme?.gradientColors?.[0]?.algorithm ||
+      "";
+    const clampedLightness = Math.max(
+      0,
+      Math.min(100, Number(lightness) || 50),
+    );
+    const cachedGeom = this._lastPickerGeometry;
 
-      const wrapper = document.createXULElement("hbox");
-      wrapper.classList.add("zen-toast");
-      wrapper.setAttribute("data-zen-toast-id", "zen-gradient-inverted-toast");
-      const vbox = document.createXULElement("vbox");
-      const label = document.createXULElement("label");
-      label.textContent = "Gradient inverted successfully!";
-      vbox.appendChild(label);
-      wrapper.appendChild(vbox);
+    const updatedColors = picker.dots.map((dot) => {
+      let hue = 0;
+      let saturation = 0;
 
-      container.removeAttribute("hidden");
-      container.appendChild(wrapper);
-
-      const closeToast = () => {
-        if (Services.prefs.getBoolPref("ui.popup.disable_autohide")) return;
-        const finish = () => {
-          wrapper.remove();
-          if (container.children.length === 0) {
-            container.setAttribute("hidden", true);
-          }
-        };
-        if (ui.motion?.animate) {
-          ui.motion
-            .animate(
-              wrapper,
-              { opacity: [1, 0], scale: [1, 0.5] },
-              { duration: 0.2, bounce: 0 },
-            )
-            .then(finish);
-        } else {
-          finish();
-        }
-      };
-
-      if (!wrapper.style.transform) {
-        wrapper.style.transform = "scale(0)";
-      }
-      if (ui.motion?.animate) {
-        ui.motion.animate(
-          wrapper,
-          { scale: 1 },
-          { type: "spring", bounce: 0.2, duration: 0.5 },
-        );
+      if (cachedGeom) {
+        const { radius, cx, cy, dotHalfSize } = cachedGeom;
+        const x = dot.position.x + dotHalfSize;
+        const y = dot.position.y + dotHalfSize;
+        const dx = x - cx;
+        const dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const normDist = 1 - Math.min(dist / radius, 1);
+        hue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+        saturation = normDist;
       } else {
-        wrapper.style.transform = "scale(1)";
+        const rgb = this._readDotRgb(dot);
+        if (rgb) {
+          const hsl = picker.rgbToHsl(rgb[0], rgb[1], rgb[2]);
+          hue = Number.isFinite(hsl[0]) ? hsl[0] : 0;
+          saturation = Number.isFinite(hsl[1]) ? hsl[1] : 0;
+        } else {
+          // Last fallback: geometry derivation if we couldn't read prior color either.
+          const { radius, cx, cy, dotHalfSize } =
+            this._getPickerGeometry(picker);
+          const x = dot.position.x + dotHalfSize;
+          const y = dot.position.y + dotHalfSize;
+          const dx = x - cx;
+          const dy = y - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const normDist = 1 - Math.min(dist / radius, 1);
+          hue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+          saturation = normDist;
+        }
       }
 
-      if (this._inversionToastTimer) {
-        clearTimeout(this._inversionToastTimer);
+      const nextRgb = picker.hslToRgb(
+        (((hue % 360) + 360) % 360) / 360,
+        Math.max(0, Math.min(1, saturation)),
+        clampedLightness / 100,
+      );
+      const safeRgb = [
+        Math.min(255, Math.max(0, nextRgb[0])),
+        Math.min(255, Math.max(0, nextRgb[1])),
+        Math.min(255, Math.max(0, nextRgb[2])),
+      ];
+
+      dot.lightness = clampedLightness;
+      dot.c = safeRgb;
+      if (currentAlgo) dot.algorithm = currentAlgo;
+
+      if (dot.element) {
+        dot.element.style.setProperty(
+          "--zen-theme-picker-dot-color",
+          `rgb(${safeRgb[0]}, ${safeRgb[1]}, ${safeRgb[2]})`,
+        );
       }
-      this._inversionToastTimer = setTimeout(closeToast, 1800);
-    } catch (e) {}
+
+      return {
+        ...dot,
+        c: safeRgb,
+        type: dot.type,
+        lightness: clampedLightness,
+        algorithm: currentAlgo,
+      };
+    });
+
+    const gradient = picker.getGradient(updatedColors);
+    const toolbarGradient = picker.getGradient(updatedColors, true);
+    docElem.style.setProperty("--zen-main-browser-background", gradient);
+    docElem.style.setProperty(
+      "--zen-main-browser-background-toolbar",
+      toolbarGradient,
+    );
+
+    const dominant = picker.getMostDominantColor(updatedColors);
+    if (dominant) {
+      const primary = picker.getAccentColorForUI(dominant);
+      docElem.style.setProperty("--zen-primary-color", primary);
+      try {
+        const isDarkMode = picker.shouldBeDarkMode(dominant);
+        docElem.setAttribute("zen-should-be-dark-mode", isDarkMode);
+        const textColor = picker.getToolbarColor(isDarkMode);
+        docElem.style.setProperty(
+          "--toolbox-textcolor",
+          `rgba(${textColor[0]}, ${textColor[1]}, ${textColor[2]}, ${textColor[3]})`,
+        );
+      } catch (e) {}
+    }
+
+    const ws = picker.currentWorkspace;
+    if (ws?.theme) {
+      ws.theme.lightness = clampedLightness;
+    }
+  }
+
+  _setupPresetPreviewHook(picker) {
+    if (this._presetPreviewHooked) return;
+    this._presetPreviewHooked = true;
+
+    const pages = document.getElementById(
+      "PanelUI-zen-gradient-generator-color-pages",
+    );
+    pages?.addEventListener(
+      "click",
+      (event) => {
+        const target = event.target;
+        const box = target?.closest?.("box[data-position]");
+        if (!box || box.classList.contains("zen-picker-favorite-box")) return;
+
+        // Temporarily normalize click payload for the selected preset only.
+        // This keeps preset preview boxes visually untouched.
+        const prevType = box.getAttribute("data-type");
+        const prevLightness = box.getAttribute("data-lightness");
+        const presetAutoInverted = this._normalizePresetBoxForInversion(
+          box,
+          picker,
+        );
+        if (presetAutoInverted) {
+          this._showInversionToast();
+        }
+
+        setTimeout(() => {
+          if (prevType === null) box.removeAttribute("data-type");
+          else box.setAttribute("data-type", prevType);
+          if (prevLightness === null) box.removeAttribute("data-lightness");
+          else box.setAttribute("data-lightness", prevLightness);
+
+          if (!this._inversionEnabled || this._isInverting) return;
+          if (!picker?.dots?.length || this._isDotDragInProgress(picker))
+            return;
+          this.checkAndApplyInversion(picker, true);
+        }, 0);
+      },
+      true,
+    );
+  }
+
+  _normalizePresetBoxForInversion(box, picker) {
+    if (!box || !picker || box.classList.contains("zen-picker-favorite-box")) {
+      return false;
+    }
+
+    if (!box.hasAttribute("data-bzgp-base-type")) {
+      box.setAttribute(
+        "data-bzgp-base-type",
+        box.getAttribute("data-type") || "explicit-lightness",
+      );
+    }
+    if (
+      box.hasAttribute("data-lightness") &&
+      !box.hasAttribute("data-bzgp-base-lightness")
+    ) {
+      box.setAttribute(
+        "data-bzgp-base-lightness",
+        box.getAttribute("data-lightness"),
+      );
+    }
+
+    const baseType = box.getAttribute("data-bzgp-base-type");
+    const baseLightness = Number(box.getAttribute("data-bzgp-base-lightness"));
+    const isExplicitLightness = baseType === "explicit-lightness";
+    const isBW = baseType === "explicit-black-white";
+    const isDark = picker.isDarkMode;
+
+    let shouldInvert = false;
+    if (this._inversionEnabled) {
+      if (isExplicitLightness && Number.isFinite(baseLightness)) {
+        shouldInvert =
+          (isDark && baseLightness > 50) || (!isDark && baseLightness < 50);
+      } else if (isBW) {
+        // B&W presets in Zen usually have a data-lightness if they are solid,
+        // or we check the average dot position. Since we are inside a preset box click,
+        // we can check if it has a lightness. If not, we assume based on ID or index,
+        // but easier to check the attribute.
+        if (Number.isFinite(baseLightness)) {
+          shouldInvert =
+            (isDark && baseLightness > 50) || (!isDark && baseLightness < 50);
+        } else {
+          // Fallback: If no lightness is set, check if the box has "White" or "Black" in its style/id if possible,
+          // but usually Zen sets d-lightness. If not, we skip.
+        }
+      }
+    }
+
+    if (isExplicitLightness || isBW) {
+      box.setAttribute("data-type", baseType);
+    }
+
+    if (Number.isFinite(baseLightness)) {
+      const nextLightness = shouldInvert ? 100 - baseLightness : baseLightness;
+      box.setAttribute("data-lightness", String(Math.round(nextLightness)));
+    }
+
+    return shouldInvert;
+  }
+
+  _refreshNativePresetBoxes(picker) {
+    // Intentionally no-op: we do not mutate preset preview boxes.
+  }
+
+  _showInversionToast() {
+    ZenPickerMods.Toast.show(
+      "Gradient inverted successfully!",
+      "zen-gradient-inverted-toast",
+    );
   }
 
   checkFromPickerState(picker) {
@@ -2603,6 +2892,14 @@ class DynamicThemeModule {
     const dotHalfSize = 29;
     const cx = width / 2;
     const cy = (rect.height + padding * 2) / 2;
+    this._lastPickerGeometry = {
+      width,
+      height: rect.height + padding * 2,
+      radius,
+      cx,
+      cy,
+      dotHalfSize,
+    };
 
     const computedDots = picker.dots.map((dot) => {
       // If 'c' exists and looks valid, use it
@@ -2720,9 +3017,10 @@ class DynamicThemeModule {
         }, 0) / picker.dots.length;
       currentL = (avgDist / radius) * 100;
     } else {
+      const dotLightness = Number(firstDot.lightness);
       const wsLightness = Number(picker.currentWorkspace?.theme?.lightness);
-      currentL = Number.isFinite(firstDot.lightness)
-        ? firstDot.lightness
+      currentL = Number.isFinite(dotLightness)
+        ? dotLightness
         : Number.isFinite(wsLightness)
           ? wsLightness
           : 50;
@@ -2773,7 +3071,8 @@ class DynamicThemeModule {
           }
         }
 
-        const finalL = isPerDotPalette ? 100 - currentL : scalarNewL;
+        const finalL =
+          isPerDotPalette && needsInversion ? 100 - currentL : scalarNewL;
 
         // Sync UI Components
         const slider = document.getElementById("zen-picker-lightness-slider");
@@ -2881,12 +3180,16 @@ class DynamicThemeModule {
           }
         } else if (!isPerDotPalette && needsInversion) {
           // Normal Scalar Path
-          if (ZenPickerMods.paletteMod) {
+          if (!surfaceReady) {
+            this._projectScalarLightnessClosed(picker, scalarNewL);
+          } else if (ZenPickerMods.paletteMod) {
             ZenPickerMods.paletteMod.fastProjectLightness(scalarNewL);
+          } else {
+            this._projectScalarLightnessClosed(picker, scalarNewL);
           }
         }
 
-        if (forceHardRefresh || (!silent && needsInversion)) {
+        if (forceHardRefresh || needsInversion) {
           setTimeout(() => {
             if (isPerDotPalette && !surfaceReady) return;
             // For per-dot palettes, use skipSave=true to avoid the
@@ -3190,19 +3493,25 @@ class FavoritesModule {
 
     let favs = this._getFavs();
     const existingIndex = favs.findIndex((f) => this._isSame(f, current));
+    let toastMsg = "";
 
     if (existingIndex > -1) {
       // Remove
       favs.splice(existingIndex, 1);
+      toastMsg = "Gradient removed successfully!";
     } else {
       // Add
       current._isNew = true; // Mark for pop-in animation
       favs.unshift(current);
+      toastMsg = "Gradient saved successfully!";
     }
 
     this._saveFavs(favs);
     this.updateButtonState();
     this.refreshFavoritesUI();
+    if (toastMsg) {
+      ZenPickerMods.Toast.show(toastMsg, "zen-favorite-toggle-toast");
+    }
   }
 
   patchLogic(picker) {
