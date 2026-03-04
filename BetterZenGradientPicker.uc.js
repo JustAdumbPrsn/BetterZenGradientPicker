@@ -3428,6 +3428,16 @@ class DynamicThemeModule {
  * FavoritesModule - Global Theme Presets
  */
 class FavoritesModule {
+  constructor() {
+    this._dragFromIndex = null;
+    this._suppressFavoriteClick = false;
+    this._suppressClickTimer = null;
+    this._pageHoverTimer = null;
+    this._pageHoverDir = 0;
+    this._pageHoverWrapper = null;
+    this._updateFavoritePagination = null;
+  }
+
   init(picker) {
     if (picker._favoritesModPatched) return;
     this.picker = picker;
@@ -3527,10 +3537,36 @@ class FavoritesModule {
                 transition: transform 0.1s;
                 overflow: visible !important;
             }
-            .zen-picker-favorite-box:hover {
+            .zen-picker-favorite-box:not(.is-ghost) {
+                cursor: grab;
+            }
+            #PanelUI-zen-gradient-generator-color-pages[dragging-favorite="true"] .zen-picker-favorite-box:not(.is-ghost):not([dragged="true"]) {
+                opacity: 0.62;
+                pointer-events: none;
+            }
+            .zen-picker-favorite-box.zen-dragging {
+                opacity: 0.45;
+                transform: scale(0.94) !important;
+                cursor: grabbing !important;
+            }
+            .zen-picker-favorite-box[dragged="true"] {
+                position: fixed !important;
+                z-index: 2147483647 !important;
+                pointer-events: none !important;
+                transform: none !important;
+                transform-origin: top left !important;
+                box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255,255,255,0.25);
+                transition: none !important;
+                margin: 0 !important;
+            }
+            .zen-picker-favorite-box.zen-drop-target {
+                outline: none !important;
+                transform: none !important;
+            }
+            .zen-picker-favorite-box:not([dragged="true"]):hover {
                 transform: scale(1.05);
             }
-            .zen-picker-favorite-box:active {
+            .zen-picker-favorite-box:not([dragged="true"]):active {
                 transform: scale(0.95);
             }
             .zen-picker-favorite-box:after {
@@ -3581,10 +3617,27 @@ class FavoritesModule {
                 background: light-dark(rgba(0,0,0,0.03), rgba(255,255,255,0.05)) !important;
                 border: 1px dashed light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.15)) !important;
                 box-shadow: none !important;
+                pointer-events: auto !important;
+                cursor: default !important;
+            }
+            .zen-picker-favorite-box.zen-favorite-placeholder {
+                background: light-dark(rgba(0,0,0,0.03), rgba(255,255,255,0.05)) !important;
+                border: 1px dashed light-dark(rgba(0,0,0,0.22), rgba(255,255,255,0.30)) !important;
+                box-shadow: none !important;
+                opacity: 1 !important;
                 pointer-events: none !important;
+            }
+            .zen-picker-favorite-box.zen-favorite-placeholder.entering {
+                animation: zen-favorite-slot-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+            }
+            @keyframes zen-favorite-slot-pop {
+                0% { transform: scale(0.86); opacity: 0.25; }
+                100% { transform: scale(1); opacity: 1; }
             }
             .zen-picker-favorite-box.is-ghost::before { display: none !important; }
             .zen-picker-favorite-box.is-ghost:after { display: none !important; }
+            .zen-picker-favorite-box.zen-favorite-placeholder::before { display: none !important; }
+            .zen-picker-favorite-box.zen-favorite-placeholder:after { display: none !important; }
 
             /* Heart Transition */
             .zen-picker-favorite-heart {
@@ -3627,6 +3680,258 @@ class FavoritesModule {
 
   _saveFavs(favs) {
     ZenPickerMods.FavoritesStorage.save(favs);
+  }
+
+  _setDragClickSuppression(duration = 220) {
+    this._suppressFavoriteClick = true;
+    if (this._suppressClickTimer) {
+      clearTimeout(this._suppressClickTimer);
+      this._suppressClickTimer = null;
+    }
+    this._suppressClickTimer = setTimeout(() => {
+      this._suppressFavoriteClick = false;
+      this._suppressClickTimer = null;
+    }, duration);
+  }
+
+  _clearDragStyles(keepDragged = false) {
+    document
+      .querySelectorAll(
+        ".zen-picker-favorite-box.zen-dragging, .zen-picker-favorite-box.zen-drop-target",
+      )
+      .forEach((node) => {
+        if (!keepDragged) node.classList.remove("zen-dragging");
+        node.classList.remove("zen-drop-target");
+      });
+  }
+
+  _clearPageHoverTimer() {
+    if (this._pageHoverTimer) {
+      clearTimeout(this._pageHoverTimer);
+      this._pageHoverTimer = null;
+    }
+    this._pageHoverDir = 0;
+    this._pageHoverWrapper = null;
+  }
+
+  _isPointInsideElement(clientX, clientY, element) {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    return (
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom
+    );
+  }
+
+  _scrollFavoritePages(pagesWrapper, dir) {
+    if (!pagesWrapper || !dir) return;
+    const favoritePages = Array.from(
+      pagesWrapper.querySelectorAll(".zen-picker-favorites-page"),
+    );
+    if (favoritePages.length <= 1) return;
+
+    const width = Math.max(1, pagesWrapper.offsetWidth || 1);
+    const maxFavoriteIndex = favoritePages.length - 1;
+    let currentIndex = Math.round(pagesWrapper.scrollLeft / width);
+    currentIndex = Math.max(0, Math.min(maxFavoriteIndex, currentIndex));
+
+    const nextIndex = Math.max(
+      0,
+      Math.min(maxFavoriteIndex, currentIndex + (dir < 0 ? -1 : 1)),
+    );
+    if (nextIndex === currentIndex) return;
+
+    pagesWrapper.scrollLeft = nextIndex * width;
+  }
+
+  _queueFavoritePageMove(pagesWrapper, dir) {
+    if (!pagesWrapper || !dir) return;
+    if (
+      this._pageHoverTimer &&
+      this._pageHoverDir === dir &&
+      this._pageHoverWrapper === pagesWrapper
+    ) {
+      return;
+    }
+
+    this._clearPageHoverTimer();
+    this._pageHoverDir = dir;
+    this._pageHoverWrapper = pagesWrapper;
+    this._pageHoverTimer = setTimeout(() => {
+      const wrapper = this._pageHoverWrapper;
+      const direction = this._pageHoverDir;
+      this._clearPageHoverTimer();
+      this._scrollFavoritePages(wrapper, direction);
+    }, 500);
+  }
+
+  _handleFavoritePageHover(clientX, clientY, pagesWrapper, leftBtn, rightBtn) {
+    if (this._dragFromIndex === null || !pagesWrapper) {
+      this._clearPageHoverTimer();
+      return;
+    }
+
+    if (
+      leftBtn &&
+      !leftBtn.disabled &&
+      this._isPointInsideElement(clientX, clientY, leftBtn)
+    ) {
+      this._queueFavoritePageMove(pagesWrapper, -1);
+      return;
+    }
+
+    if (
+      rightBtn &&
+      !rightBtn.disabled &&
+      this._isPointInsideElement(clientX, clientY, rightBtn)
+    ) {
+      this._queueFavoritePageMove(pagesWrapper, 1);
+      return;
+    }
+
+    this._clearPageHoverTimer();
+  }
+
+  _repositionDraggedFavoriteBox(placeholder, clientX, clientY, pagesWrapper) {
+    if (!placeholder || !pagesWrapper) return;
+    this._clearDragStyles(true);
+
+    let slots = Array.from(pagesWrapper.querySelectorAll(".zen-picker-favorite-box"));
+
+    const swapWithNeighbor = (direction) => {
+      const currentSlots = Array.from(
+        pagesWrapper.querySelectorAll(".zen-picker-favorite-box"),
+      );
+      const currentIndex = currentSlots.indexOf(placeholder);
+      const neighborIndex = currentIndex + direction;
+      if (neighborIndex < 0 || neighborIndex >= currentSlots.length) return false;
+      const neighbor = currentSlots[neighborIndex];
+      if (!neighbor || neighbor === placeholder) return false;
+
+      if (neighbor.parentNode === placeholder.parentNode) {
+        if (direction > 0) {
+          placeholder.parentNode.insertBefore(neighbor, placeholder);
+        } else {
+          placeholder.parentNode.insertBefore(placeholder, neighbor);
+        }
+        return true;
+      }
+
+      const placeholderParent = placeholder.parentNode;
+      const placeholderNext = placeholder.nextSibling;
+      const neighborParent = neighbor.parentNode;
+      const neighborNext = neighbor.nextSibling;
+      if (!placeholderParent || !neighborParent) return false;
+
+      placeholderParent.insertBefore(neighbor, placeholderNext);
+      neighborParent.insertBefore(placeholder, neighborNext);
+      return true;
+    };
+
+    let hoveredSlot = null;
+    let placeBefore = true;
+
+    for (const slot of slots) {
+      if (slot === placeholder) continue;
+
+      const rect = slot.getBoundingClientRect();
+      const isInside =
+        clientX > rect.left &&
+        clientX < rect.right &&
+        clientY > rect.top &&
+        clientY < rect.bottom;
+      if (!isInside) continue;
+
+      hoveredSlot = slot;
+      placeBefore = clientX < rect.left + rect.width / 2;
+      break;
+    }
+    if (!hoveredSlot) return;
+
+    slots = Array.from(pagesWrapper.querySelectorAll(".zen-picker-favorite-box"));
+    const hoveredIndex = slots.indexOf(hoveredSlot);
+    const currentIndex = slots.indexOf(placeholder);
+    if (hoveredIndex < 0 || currentIndex < 0) return;
+
+    const desiredIndex = placeBefore ? hoveredIndex : hoveredIndex + 1;
+    const moveForwardSteps = Math.max(0, desiredIndex - currentIndex - 1);
+    const moveBackwardSteps = Math.max(0, currentIndex - desiredIndex);
+    if (moveForwardSteps === 0 && moveBackwardSteps === 0) return;
+
+    const beforeMoveSlots = Array.from(
+      pagesWrapper.querySelectorAll(".zen-picker-favorite-box"),
+    );
+    const flipTargets = beforeMoveSlots.filter((n) => n !== placeholder);
+    const firstRects = new Map();
+    flipTargets.forEach((n) => firstRects.set(n, n.getBoundingClientRect()));
+
+    for (let i = 0; i < moveForwardSteps; i++) {
+      if (!swapWithNeighbor(1)) break;
+    }
+    for (let i = 0; i < moveBackwardSteps; i++) {
+      if (!swapWithNeighbor(-1)) break;
+    }
+
+    placeholder.classList.remove("entering");
+    void placeholder.offsetWidth;
+    placeholder.classList.add("entering");
+
+    flipTargets.forEach((n) => {
+      if (!n.isConnected) return;
+      const first = firstRects.get(n);
+      if (!first) return;
+      const last = n.getBoundingClientRect();
+      const dx = first.left - last.left;
+      const dy = first.top - last.top;
+      if (dx === 0 && dy === 0) return;
+      n.style.transition = "none";
+      n.style.transform = `translate(${dx}px, ${dy}px)`;
+      void n.offsetWidth;
+      requestAnimationFrame(() => {
+        n.style.transition = "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)";
+        n.style.transform = "";
+      });
+    });
+  }
+
+  _getFavoriteFinalIndexFromPlaceholder(pagesWrapper, placeholder) {
+    if (!pagesWrapper || !placeholder) return -1;
+    const slots = Array.from(
+      pagesWrapper.querySelectorAll(".zen-picker-favorite-box"),
+    );
+    const placeholderIndex = slots.indexOf(placeholder);
+    if (placeholderIndex < 0) return -1;
+    return slots
+      .slice(0, placeholderIndex)
+      .filter((slot) => !slot.classList.contains("is-ghost"))
+      .length;
+  }
+
+  _reorderFavorites(fromIndex, toIndex) {
+    const favs = [...this._getFavs()];
+    if (!favs.length) return false;
+    if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return false;
+    if (fromIndex < 0 || fromIndex >= favs.length) return false;
+
+    let insertAt = Math.max(0, Math.min(toIndex, favs.length));
+    if (fromIndex === insertAt || fromIndex + 1 === insertAt) return false;
+
+    const [moved] = favs.splice(fromIndex, 1);
+    if (!moved) return false;
+    if (fromIndex < insertAt) insertAt -= 1;
+    favs.splice(insertAt, 0, moved);
+
+    this._saveFavs(favs);
+    this.refreshFavoritesUI();
+    this.updateButtonState();
+    ZenPickerMods.Toast.show(
+      "Reordered saved gradient",
+      "zen-favorite-reorder-toast",
+      1200,
+    );
+    return true;
   }
 
   _getCurrentState() {
@@ -3829,12 +4134,46 @@ class FavoritesModule {
 
     if (pagesWrapper && leftBtn && rightBtn) {
       // Force a re-init of pagination logic to account for new children length
-      const updatePagBtns = () => {
-        leftBtn.disabled = pagesWrapper.scrollLeft === 0;
-        rightBtn.disabled =
-          pagesWrapper.scrollLeft + pagesWrapper.offsetWidth >=
-          pagesWrapper.scrollWidth - 1;
+      const getPaginationModel = () => {
+        const width = Math.max(1, pagesWrapper.offsetWidth || 1);
+        const allPages = Array.from(pagesWrapper.children);
+        const isDraggingFavorites =
+          pagesWrapper.getAttribute("dragging-favorite") === "true";
+
+        // Only lock paging to favorites while an active reorder drag is running.
+        if (!isDraggingFavorites) {
+          return {
+            width,
+            firstIdx: 0,
+            lastIdx: Math.max(0, allPages.length - 1),
+          };
+        }
+
+        const favoritePages = Array.from(
+          pagesWrapper.querySelectorAll(".zen-picker-favorites-page"),
+        );
+        if (favoritePages.length) {
+          const firstFavoriteIdx = allPages.indexOf(favoritePages[0]);
+          return {
+            width,
+            firstIdx: Math.max(0, firstFavoriteIdx),
+            lastIdx: Math.max(0, firstFavoriteIdx + favoritePages.length - 1),
+          };
+        }
+        return {
+          width,
+          firstIdx: 0,
+          lastIdx: Math.max(0, allPages.length - 1),
+        };
       };
+
+      const updatePagBtns = () => {
+        const model = getPaginationModel();
+        const currentPage = Math.round(pagesWrapper.scrollLeft / model.width);
+        leftBtn.disabled = currentPage <= model.firstIdx;
+        rightBtn.disabled = currentPage >= model.lastIdx;
+      };
+      this._updateFavoritePagination = updatePagBtns;
       pagesWrapper.addEventListener("scroll", updatePagBtns);
 
       // Patch Buttons to work with ACTUAL child indices
@@ -3842,12 +4181,10 @@ class FavoritesModule {
         "click",
         (e) => {
           e.stopImmediatePropagation();
-          const pages = pagesWrapper.children;
-          const currentPage = Math.round(
-            pagesWrapper.scrollLeft / pagesWrapper.offsetWidth,
-          );
-          const nextPage = (currentPage - 1 + pages.length) % pages.length;
-          pagesWrapper.scrollLeft = nextPage * pagesWrapper.offsetWidth;
+          const model = getPaginationModel();
+          const currentPage = Math.round(pagesWrapper.scrollLeft / model.width);
+          const nextPage = Math.max(model.firstIdx, currentPage - 1);
+          pagesWrapper.scrollLeft = nextPage * model.width;
           updatePagBtns();
         },
         true,
@@ -3857,12 +4194,10 @@ class FavoritesModule {
         "click",
         (e) => {
           e.stopImmediatePropagation();
-          const pages = pagesWrapper.children;
-          const currentPage = Math.round(
-            pagesWrapper.scrollLeft / pagesWrapper.offsetWidth,
-          );
-          const nextPage = (currentPage + 1) % pages.length;
-          pagesWrapper.scrollLeft = nextPage * pagesWrapper.offsetWidth;
+          const model = getPaginationModel();
+          const currentPage = Math.round(pagesWrapper.scrollLeft / model.width);
+          const nextPage = Math.min(model.lastIdx, currentPage + 1);
+          pagesWrapper.scrollLeft = nextPage * model.width;
           updatePagBtns();
         },
         true,
@@ -3964,6 +4299,16 @@ class FavoritesModule {
       "PanelUI-zen-gradient-generator-color-pages",
     );
     if (!pagesWrapper) return;
+    pagesWrapper.removeAttribute("dragging-favorite");
+    document.getElementById("zen-picker-favorite-drag-overlay")?.remove();
+    this._dragFromIndex = null;
+    this._clearPageHoverTimer();
+    const leftBtn = document.getElementById(
+      "PanelUI-zen-gradient-generator-color-page-left",
+    );
+    const rightBtn = document.getElementById(
+      "PanelUI-zen-gradient-generator-color-page-right",
+    );
 
     // Cleanup old favorite pages
     Array.from(
@@ -3971,38 +4316,246 @@ class FavoritesModule {
     ).forEach((p) => p.remove());
 
     const favs = this._getFavs();
-    if (!favs.length) return;
+    if (!favs.length) {
+      this._updateFavoritePagination?.();
+      return;
+    }
 
-    const createBox = (fav) => {
+    const createBox = (fav, slotIndex) => {
       const box = document.createXULElement
         ? document.createXULElement("box")
         : document.createElement("box");
-      if (!fav) {
+      const isGhost = !fav;
+      if (isGhost) {
         box.className = "zen-picker-favorite-box is-ghost";
         box.style.minWidth = "26px";
         box.style.minHeight = "26px";
-        return box;
-      }
-      box.className = "zen-picker-favorite-box";
-      box.setAttribute("data-num-dots", fav.numDots);
-      const colors = fav.dots.map((d) =>
-        this._getPreviewColor(d.x, d.y, fav.paletteType, fav.lightness),
-      );
-      if (fav.numDots === 1) {
-        box.style.setProperty("background", colors[0], "important");
       } else {
-        colors.forEach((c, idx) => box.style.setProperty(`--c${idx + 1}`, c));
-      }
-      box.addEventListener(
-        "click",
-        (e) => {
-          e.stopPropagation();
-          this.applyFavorite(fav);
-        },
-        true,
-      );
+        box.className = "zen-picker-favorite-box";
+        box.setAttribute("data-num-dots", fav.numDots);
+        box.setAttribute("tooltiptext", "Click to apply. Drag to reorder.");
+        const colors = fav.dots.map((d) =>
+          this._getPreviewColor(d.x, d.y, fav.paletteType, fav.lightness),
+        );
+        if (fav.numDots === 1) {
+          box.style.setProperty("background", colors[0], "important");
+        } else {
+          colors.forEach((c, idx) => box.style.setProperty(`--c${idx + 1}`, c));
+        }
+        box.addEventListener("mousedown", (downEvent) => {
+          if (
+            downEvent.button !== 0 ||
+            downEvent.ctrlKey ||
+            downEvent.shiftKey ||
+            downEvent.altKey
+          ) {
+            return;
+          }
+          downEvent.preventDefault();
+          downEvent.stopPropagation();
 
-      if (fav._isNew) {
+          const startX = downEvent.clientX;
+          const startY = downEvent.clientY;
+          let isReorderMode = false;
+          let isDragActive = false;
+          let isLanding = false;
+          let dragPlaceholder = null;
+          let dragOverlay = null;
+          let dragGhost = null;
+          let initialOffsetX = 0;
+          let initialOffsetY = 0;
+          let currentX = 0;
+          let currentY = 0;
+          let targetX = 0;
+          let targetY = 0;
+          this._dragFromIndex = slotIndex;
+
+          const cleanupDragStyles = () => {
+            box.classList.remove("zen-dragging");
+            box.classList.remove("zen-favorite-placeholder");
+            box.classList.remove("entering");
+            box.removeAttribute("dragged");
+            box.style.removeProperty("width");
+            box.style.removeProperty("height");
+            box.style.removeProperty("left");
+            box.style.removeProperty("top");
+          };
+
+          const finalizeDrop = () => {
+            isDragActive = false;
+            isLanding = false;
+            dragOverlay?.remove();
+            dragOverlay = null;
+            dragGhost?.remove();
+            dragGhost = null;
+
+            pagesWrapper.removeAttribute("dragging-favorite");
+            this._updateFavoritePagination?.();
+            this._clearPageHoverTimer();
+
+            const finalIndex = this._getFavoriteFinalIndexFromPlaceholder(
+              pagesWrapper,
+              dragPlaceholder,
+            );
+
+            cleanupDragStyles();
+            dragPlaceholder = null;
+
+            this._dragFromIndex = null;
+            this._clearDragStyles();
+            this._setDragClickSuppression(320);
+
+            if (finalIndex > -1) {
+              const insertionIndex =
+                slotIndex < finalIndex ? finalIndex + 1 : finalIndex;
+              this._reorderFavorites(slotIndex, insertionIndex);
+            }
+          };
+
+          const moveLoop = () => {
+            if (!isDragActive) return;
+            if (isLanding) {
+              const lerp = 0.3;
+              currentX += (targetX - currentX) * lerp;
+              currentY += (targetY - currentY) * lerp;
+            } else {
+              currentX = targetX;
+              currentY = targetY;
+            }
+            if (dragGhost) {
+              dragGhost.style.left = `${currentX}px`;
+              dragGhost.style.top = `${currentY}px`;
+            }
+
+            if (isLanding) {
+              const dist = Math.hypot(targetX - currentX, targetY - currentY);
+              if (dist < 0.6) {
+                finalizeDrop();
+                return;
+              }
+            }
+
+            requestAnimationFrame(moveLoop);
+          };
+
+          const startDrag = (originEvent) => {
+            if (isReorderMode) return;
+            isReorderMode = true;
+            isDragActive = true;
+            this._setDragClickSuppression();
+
+            const rect = box.getBoundingClientRect();
+            // Keep ghost visually attached to cursor (centered).
+            initialOffsetX = Math.round(rect.width / 2);
+            initialOffsetY = Math.round(rect.height / 2);
+            targetX = originEvent.clientX - initialOffsetX;
+            targetY = originEvent.clientY - initialOffsetY;
+            currentX = targetX;
+            currentY = targetY;
+
+            dragPlaceholder = box;
+            dragPlaceholder.classList.add("zen-favorite-placeholder");
+            dragPlaceholder.classList.add("entering");
+
+            dragOverlay = document.createElement("div");
+            dragOverlay.id = "zen-picker-favorite-drag-overlay";
+            dragOverlay.style.cssText =
+              "position:fixed;inset:0;z-index:999998;cursor:grabbing;pointer-events:auto;";
+            document.body.appendChild(dragOverlay);
+
+            dragGhost = box.cloneNode(true);
+            dragGhost.classList.remove("zen-favorite-placeholder");
+            dragGhost.classList.remove("entering");
+            dragGhost.classList.remove("zen-drop-target");
+            dragGhost.classList.remove("zen-favorite-pop-in");
+            dragGhost.setAttribute("dragged", "true");
+            dragGhost.style.position = "fixed";
+            dragGhost.style.pointerEvents = "none";
+            dragGhost.style.zIndex = "2147483647";
+            dragGhost.style.width = `${rect.width}px`;
+            dragGhost.style.height = `${rect.height}px`;
+            dragGhost.style.left = `${currentX}px`;
+            dragGhost.style.top = `${currentY}px`;
+            const popupLayer =
+              document.getElementById("mainPopupSet") ||
+              document.getElementById("PanelUI-zen-gradient-generator") ||
+              document.documentElement ||
+              document.body;
+            popupLayer.appendChild(dragGhost);
+
+            pagesWrapper.setAttribute("dragging-favorite", "true");
+            this._updateFavoritePagination?.();
+            requestAnimationFrame(moveLoop);
+          };
+
+          const moveHandler = (moveEvent) => {
+            if (
+              !isReorderMode &&
+              (Math.abs(moveEvent.clientX - startX) > 5 ||
+                Math.abs(moveEvent.clientY - startY) > 5)
+            ) {
+              startDrag(moveEvent);
+            }
+            if (!isReorderMode) return;
+
+            targetX = moveEvent.clientX - initialOffsetX;
+            targetY = moveEvent.clientY - initialOffsetY;
+
+            this._handleFavoritePageHover(
+              moveEvent.clientX,
+              moveEvent.clientY,
+              pagesWrapper,
+              leftBtn,
+              rightBtn,
+            );
+            const hoveringPageButton =
+              (leftBtn &&
+                !leftBtn.disabled &&
+                this._isPointInsideElement(
+                  moveEvent.clientX,
+                  moveEvent.clientY,
+                  leftBtn,
+                )) ||
+              (rightBtn &&
+                !rightBtn.disabled &&
+                this._isPointInsideElement(
+                  moveEvent.clientX,
+                  moveEvent.clientY,
+                  rightBtn,
+                ));
+            if (!hoveringPageButton) {
+              this._repositionDraggedFavoriteBox(
+                dragPlaceholder,
+                moveEvent.clientX,
+                moveEvent.clientY,
+                pagesWrapper,
+              );
+            }
+          };
+
+          const upHandler = () => {
+            document.removeEventListener("mousemove", moveHandler);
+            document.removeEventListener("mouseup", upHandler);
+
+            if (isReorderMode && dragPlaceholder) {
+              this._clearPageHoverTimer();
+              const finalRect = dragPlaceholder.getBoundingClientRect();
+              targetX = finalRect.left;
+              targetY = finalRect.top;
+              isLanding = true;
+            } else if (!this._suppressFavoriteClick) {
+              this._dragFromIndex = null;
+              this.applyFavorite(fav);
+            }
+          };
+
+          document.addEventListener("mousemove", moveHandler);
+          document.addEventListener("mouseup", upHandler);
+        });
+      }
+      box.setAttribute("data-fav-index", String(slotIndex));
+
+      if (!isGhost && fav._isNew) {
         box.classList.add("zen-favorite-pop-in");
         delete fav._isNew;
         // Clean markers from cache and schedule save
@@ -4022,15 +4575,23 @@ class FavoritesModule {
       "hbox:not(.zen-picker-favorites-page)",
     );
 
-    chunks.forEach((chunk) => {
+    chunks.forEach((chunk, chunkIndex) => {
       const page = document.createXULElement
         ? document.createXULElement("hbox")
         : document.createElement("hbox");
       page.className = "zen-picker-favorites-page";
-      chunk.forEach((fav) => page.appendChild(createBox(fav)));
-      while (page.children.length < 8) page.appendChild(createBox(null));
+      const chunkStart = chunkIndex * 8;
+      chunk.forEach((fav, idx) =>
+        page.appendChild(createBox(fav, chunkStart + idx)),
+      );
+      while (page.children.length < 8) {
+        const ghostIndex = chunkStart + page.children.length;
+        page.appendChild(createBox(null, ghostIndex));
+      }
       pagesWrapper.insertBefore(page, firstNative);
     });
+
+    this._updateFavoritePagination?.();
   }
 
   _animateState(toOp, toTex) {
