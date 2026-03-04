@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           BetterZenGradientPicker
-// @version        1.6
+// @version        1.7
 // @description    A Sine mod which aims to overhaul Zen's gradient picker with tons of new features :))
 // @author         JustAdumbPrsn
 // @include        main
@@ -2585,6 +2585,7 @@ class DynamicThemeModule {
     this._pendingDragInversionTimer = null;
     this._lastPickerGeometry = null;
     this._inversionToastTimer = null;
+    this._lastClosedPerDotInversionAt = 0;
   }
 
   init(picker) {
@@ -2649,13 +2650,15 @@ class DynamicThemeModule {
       // 2. Safety Refresh (1000ms)
       // Ensures any final UI artifacts are cleaned up and the workspace is saved.
       setTimeout(() => {
-        if (picker.updateCurrentWorkspace) {
-          // If we just did a closed-panel inversion, skip the destructive
-          // full rebuild (skipSave=false triggers recalculateDots which
-          // calls getColorFromPosition with 0x0 panel rect).
-          const pickerOpen = self._isPickerSurfaceReady(picker);
-          picker.updateCurrentWorkspace(pickerOpen ? false : true);
-        }
+        if (!picker.updateCurrentWorkspace) return;
+        // If we just applied a closed-panel per-dot inversion, a follow-up
+        // rebuild can replay stale workspace theme data and undo the flip.
+        const now = Date.now();
+        const hadRecentClosedPerDotInversion =
+          now - (self._lastClosedPerDotInversionAt || 0) < 1400;
+        if (hadRecentClosedPerDotInversion) return;
+        const pickerOpen = self._isPickerSurfaceReady(picker);
+        picker.updateCurrentWorkspace(pickerOpen ? false : true);
       }, 1000);
     };
     mql.addEventListener("change", this._sysListener);
@@ -3388,6 +3391,35 @@ class DynamicThemeModule {
                   "--toolbox-textcolor",
                   `rgba(${textColor[0]}, ${textColor[1]}, ${textColor[2]}, ${textColor[3]})`,
                 );
+              } catch (e) {}
+            }
+
+            // Persist the per-dot inversion so any delayed refresh uses
+            // the new (already inverted) state instead of stale theme data.
+            const ws = picker.currentWorkspace;
+            this._lastClosedPerDotInversionAt = Date.now();
+            if (ws?.theme) {
+              ws.theme.type = "gradient";
+              ws.theme.lightness = finalL;
+              ws.theme.gradientColors = picker.dots.map((d) => ({
+                c: Array.isArray(d.c) ? [d.c[0], d.c[1], d.c[2]] : [0, 0, 0],
+                isCustom: Boolean(d.isCustom),
+                isPrimary: Boolean(d.isPrimary),
+                algorithm: currentAlgo,
+                lightness:
+                  Number.isFinite(Number(d.lightness))
+                    ? Number(d.lightness)
+                    : finalL,
+                position: {
+                  x: Number(d.position?.x ?? 0),
+                  y: Number(d.position?.y ?? 0),
+                },
+                type: d.type,
+              }));
+              try {
+                if (gZenWorkspaces?.saveWorkspace) {
+                  gZenWorkspaces.saveWorkspace(ws);
+                }
               } catch (e) {}
             }
           }
