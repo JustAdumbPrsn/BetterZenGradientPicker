@@ -1438,7 +1438,7 @@ class PaletteModule {
             #zen-picker-randomize {
                 position: absolute;
                 top: 15px;
-                right: 12px;
+                left: 12px;
                 z-index: 1001;
                 display: flex !important;
                 align-items: center;
@@ -3406,10 +3406,9 @@ class DynamicThemeModule {
                 isCustom: Boolean(d.isCustom),
                 isPrimary: Boolean(d.isPrimary),
                 algorithm: currentAlgo,
-                lightness:
-                  Number.isFinite(Number(d.lightness))
-                    ? Number(d.lightness)
-                    : finalL,
+                lightness: Number.isFinite(Number(d.lightness))
+                  ? Number(d.lightness)
+                  : finalL,
                 position: {
                   x: Number(d.position?.x ?? 0),
                   y: Number(d.position?.y ?? 0),
