@@ -807,6 +807,127 @@ class RotationModule {
     return Math.round(offset);
   }
 
+  _getPickerGeometry(picker) {
+    const padding = 30;
+    const dotHalfSize = 29;
+    const panel = picker?.panel?.querySelector?.(".zen-theme-picker-gradient");
+    const rect = panel?.getBoundingClientRect?.();
+    const width = rect?.width > 10 ? rect.width + padding * 2 : 380 + padding * 2;
+    const height =
+      rect?.height > 10 ? rect.height + padding * 2 : 380 + padding * 2;
+
+    return {
+      width,
+      height,
+      radius: (width - padding) / 2,
+      cx: width / 2,
+      cy: height / 2,
+      dotHalfSize,
+    };
+  }
+
+  _getBaseRGBColor(picker, color) {
+    if (color?.position && typeof picker?.hslToRgb === "function") {
+      const { radius, cx, cy, dotHalfSize } = this._getPickerGeometry(picker);
+      const x = color.position.x + dotHalfSize;
+      const y = color.position.y + dotHalfSize;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const normDist = 1 - Math.min(dist / radius, 1);
+      const hue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+      const radialRatio = 1 - normDist;
+      const isExplicitLightness = color.type === "explicit-lightness";
+
+      let saturation = isExplicitLightness ? normDist * 100 : 90 + radialRatio * 10;
+      let lightness = isExplicitLightness
+        ? (color.lightness ?? picker.currentWorkspace?.theme?.lightness ?? 50)
+        : radialRatio * 100;
+
+      if (color.type === "explicit-black-white") {
+        saturation = 0;
+        lightness = radialRatio * 100;
+      }
+
+      const rgb = picker.hslToRgb(
+        hue / 360,
+        Math.max(0, Math.min(100, saturation)) / 100,
+        Math.max(0, Math.min(100, lightness)) / 100,
+      );
+      return rgb.map((v) =>
+        Math.min(255, Math.max(0, Math.round(Number(v) || 0))),
+      );
+    }
+
+    if (Array.isArray(color?.c) && color.c.length >= 3) {
+      return color.c
+        .slice(0, 3)
+        .map((v) => Math.min(255, Math.max(0, Math.round(Number(v) || 0))));
+    }
+
+    return [0, 0, 0];
+  }
+
+  _blendRGB(rgb1, rgb2, percentage) {
+    const p = percentage / 100;
+    return [
+      Math.round(rgb1[0] * p + rgb2[0] * (1 - p)),
+      Math.round(rgb1[1] * p + rgb2[1] * (1 - p)),
+      Math.round(rgb1[2] * p + rgb2[2] * (1 - p)),
+    ];
+  }
+
+  _getRGBColor(picker, color, forToolbar) {
+    if (typeof picker?.getSingleRGBColor === "function") {
+      return picker.getSingleRGBColor(color, forToolbar);
+    }
+
+    if (color?.isCustom) {
+      return color.c;
+    }
+
+    let opacity = Number(picker?.currentOpacity ?? 1);
+    if (!Number.isFinite(opacity)) opacity = 1;
+
+    const toolbarBase =
+      typeof picker?.getToolbarModifiedBaseRaw === "function"
+        ? picker.getToolbarModifiedBaseRaw()
+        : picker?.isDarkMode
+          ? [23, 23, 26, 1]
+          : [240, 240, 244, 1];
+    const allowTransparencyOnSidebar = Number(toolbarBase?.[3]) < 1;
+    const canBeTransparent = !!picker?.canBeTransparent;
+    let rgb = this._getBaseRGBColor(picker, color);
+
+    if (
+      (forToolbar && !allowTransparencyOnSidebar) ||
+      (!forToolbar && !canBeTransparent)
+    ) {
+      const blend = typeof picker?.blendColors === "function"
+        ? picker.blendColors.bind(picker)
+        : this._blendRGB.bind(this);
+      rgb = blend(
+        rgb,
+        toolbarBase.slice(0, 3),
+        canBeTransparent ? 90 : opacity * 100,
+      );
+      opacity = 1;
+    }
+
+    if (picker?.isLegacyVersion && picker?.isDarkMode) {
+      const blend = typeof picker?.blendColors === "function"
+        ? picker.blendColors.bind(picker)
+        : this._blendRGB.bind(this);
+      rgb = blend(rgb, [0, 0, 0], 30);
+    }
+
+    if (typeof picker?.blendWithWhiteOverlay === "function") {
+      return picker.blendWithWhiteOverlay(rgb, opacity);
+    }
+
+    return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${opacity})`;
+  }
+
   init(picker) {
     if (picker._rotationModPatched) return;
     this.picker = picker;
@@ -1227,7 +1348,7 @@ class RotationModule {
       if (themedColors.length <= 1) return nativeResult;
 
       const displayDelta = self.displayAngle;
-      const getCol = (c) => this.getSingleRGBColor(c, forToolbar);
+      const getCol = (c) => self._getRGBColor(this, c, forToolbar);
       const cols = themedColors.map(getCol);
 
       if (themedColors.find((c) => c.isCustom)) {
