@@ -1,0 +1,678 @@
+/* Shared tokens and icons (defined once, used by several features) */
+:root {
+  --zen-picker-muted-text: light-dark(rgba(0, 0, 0, 0.6), rgba(255, 255, 255, 0.7));
+  --zen-picker-hover-surface: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.1));
+  --zen-picker-track-color: light-dark(rgba(77, 77, 77, 0.5), rgba(161, 161, 161, 0.5));
+  --zen-picker-slot-surface: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.05));
+  --zen-picker-slot-border: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.15));
+  --zen-picker-favorite-color: #f44336;
+  --zen-picker-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --zen-picker-icon-palette: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 12C2 17.5228 6.47715 22 12 22C13.6569 22 15 20.6569 15 19V18.5C15 18.0356 15 17.8034 15.0257 17.6084C15.2029 16.2622 16.2622 15.2029 17.6084 15.0257C17.8034 15 18.0356 15 18.5 15H19C20.6569 15 22 13.6569 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12Z'/%3E%3Cpath d='M7 13C7.55228 13 8 12.5523 8 12C8 11.4477 7.55228 11 7 11C6.44772 11 6 11.4477 6 12C6 12.5523 6.44772 13 7 13Z'/%3E%3Cpath d='M16 9C16.5523 9 17 8.55228 17 8C17 7.44772 16.5523 7 16 7C15.4477 7 15 7.44772 15 8C15 8.55228 15.4477 9 16 9Z'/%3E%3Cpath d='M10 8C10.5523 8 11 7.55228 11 7C11 6.44772 10.5523 6 10 6C9.44772 6 9 6.44772 9 7C9 7.55228 9.44772 8 10 8Z'/%3E%3C/svg%3E");
+  --zen-picker-icon-wand: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.0001 14L10.0001 11M15.0104 3.5V2M18.9498 5.06066L20.0104 4M18.9498 13L20.0104 14.0607M11.0104 5.06066L9.94979 4M20.5104 9H22.0104M6.13146 20.8686L15.3687 11.6314C15.7647 11.2354 15.9627 11.0373 16.0369 10.809C16.1022 10.6082 16.1022 10.3918 16.0369 10.191C15.9627 9.96265 15.7647 9.76465 15.3687 9.36863L14.6315 8.63137C14.2354 8.23535 14.0374 8.03735 13.8091 7.96316C13.6083 7.8979 13.3919 7.8979 13.1911 7.96316C12.9627 8.03735 12.7647 8.23535 12.3687 8.63137L3.13146 17.8686C2.73545 18.2646 2.53744 18.4627 2.46325 18.691C2.39799 18.8918 2.39799 19.1082 2.46325 19.309C2.53744 19.5373 2.73545 19.7354 3.13146 20.1314L3.86872 20.8686C4.26474 21.2646 4.46275 21.4627 4.69108 21.5368C4.89192 21.6021 5.10827 21.6021 5.30911 21.5368C5.53744 21.4627 5.73545 21.2646 6.13146 20.8686Z'/%3E%3C/svg%3E");
+  --zen-picker-icon-reset: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 2v6h-6'%3E%3C/path%3E%3Cpath d='M3 12a9 9 0 0 1 15-6.7L21 8'%3E%3C/path%3E%3Cpath d='M3 22v-6h6'%3E%3C/path%3E%3Cpath d='M21 12a9 9 0 0 1-15 6.7L3 16'%3E%3C/path%3E%3C/svg%3E");
+
+  /* Outline Heart */
+  --zen-picker-icon-heart-outline: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M11.9932 5.13581C9.9938 2.7984 6.65975 2.16964 4.15469 4.31001C1.64964 6.45038 1.29697 10.029 3.2642 12.5604C4.89982 14.6651 9.84977 19.1041 11.4721 20.5408C11.6536 20.7016 11.7444 20.7819 11.8502 20.8135C11.9426 20.8411 12.0437 20.8411 12.1361 20.8135C12.2419 20.7819 12.3327 20.7016 12.5142 20.5408C14.1365 19.1041 19.0865 14.6651 20.7221 12.5604C22.6893 10.029 22.3797 6.42787 19.8316 4.31001C17.2835 2.19216 13.9925 2.7984 11.9932 5.13581Z' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  /* Filled Heart */
+  --zen-picker-icon-heart-filled: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2.2' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11.9932 5.13581C9.9938 2.7984 6.65975 2.16964 4.15469 4.31001C1.64964 6.45038 1.29697 10.029 3.2642 12.5604C4.89982 14.6651 9.84977 19.1041 11.4721 20.5408C11.6536 20.7016 11.7444 20.7819 11.8502 20.8135C11.9426 20.8411 12.0437 20.8411 12.1361 20.8135C12.2419 20.7819 12.3327 20.7016 12.5142 20.5408C14.1365 19.1041 19.0865 14.6651 20.7221 12.5604C22.6893 10.029 22.3797 6.42787 19.8316 4.31001C17.2835 2.19216 13.9925 2.7984 11.9932 5.13581Z'/%3E%3C/svg%3E");
+}
+
+/* Layout: controls column and the secondary row (lightness & rotation) */
+#PanelUI-zen-gradient-generator-controls {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+#PanelUI-zen-gradient-generator-scheme {
+  opacity: 0.6 !important;
+}
+
+#zen-picker-secondary-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 0 var(--panel-padding, 10px);
+
+  @media (-moz-platform: macos) {
+    gap: 2rem;
+  }
+}
+
+/* Harmony: floating dots */
+#PanelUI-zen-gradient-generator[zen-harmony-mode="floating"] .zen-theme-picker-dot:not(:first-of-type) {
+  pointer-events: all !important; /* beats Zen's author sheet */
+  cursor: pointer !important;
+}
+
+#PanelUI-zen-gradient-generator[zen-harmony-mode="floating"] .zen-theme-picker-dot:not(:first-of-type):not([dragging="true"]):hover {
+  transform: scale(1.05) translate(-50%, -50%) !important;
+  z-index: 2000 !important;
+  box-shadow: 0 0 10px var(--zen-colors-text-primary), 0 0 4px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s !important;
+}
+
+@keyframes zen-dot-angular-wiggle {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  20% { transform: translate(-50%, -50%) rotate(8deg); }
+  40% { transform: translate(-50%, -50%) rotate(-6deg); }
+  60% { transform: translate(-50%, -50%) rotate(3deg); }
+  80% { transform: translate(-50%, -50%) rotate(-1.5deg); }
+}
+
+#PanelUI-zen-gradient-generator .zen-theme-picker-dot.zen-dot-shake {
+  transform-origin: calc(50% + var(--ox, 0px)) calc(50% + var(--oy, 0px)) !important; /* beats Zen's author sheet */
+  animation: zen-dot-angular-wiggle 0.6s cubic-bezier(0.4, 0, 0.2, 1) both !important;
+  z-index: 2001 !important;
+}
+
+/* Rotation dial */
+#zen-picker-rotation-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 20;
+  transition: opacity 0.2s;
+}
+
+#zen-rotation-dial-wrapper {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 5rem;
+  height: 5rem;
+  margin: 0;
+  overflow: visible;
+  border-radius: 50%;
+
+  @media (-moz-platform: macos) {
+    width: 6rem;
+    height: 6rem;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 20%;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--zen-colors-border) 50%, transparent 50%);
+    border-radius: 50%;
+    background: linear-gradient(-45deg, transparent -10%, var(--zen-picker-hover-surface) 110%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  &:not([disabled]):hover::after {
+    pointer-events: all;
+    cursor: pointer;
+  }
+
+  &[disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+#zen-rotation-dial-ring,
+#zen-rotation-dial-arc {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+
+  & circle {
+    fill: none;
+    stroke: light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
+    stroke-linecap: round;
+  }
+}
+
+#zen-rotation-dial-ring {
+  z-index: 1;
+  opacity: 0.4;
+}
+
+#zen-rotation-dial-arc {
+  z-index: 1;
+  opacity: 1;
+  transform: rotate(-90deg);
+  transition: opacity 0.2s;
+}
+
+#zen-rotation-dial-label,
+#zen-grain-reset-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--zen-picker-muted-text);
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: currentColor;
+    mask: var(--zen-picker-icon-reset) no-repeat center / contain;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+}
+
+#zen-rotation-dial-label {
+  z-index: 3;
+  font-size: 11px;
+  transition: opacity 0.4s var(--zen-picker-ease);
+
+  &::after {
+    transform: translate(0, -1px);
+  }
+
+  & span {
+    opacity: 0.6;
+    transition: opacity 0.15s ease-out;
+  }
+}
+
+#zen-rotation-dial-wrapper.knob-hover {
+  & #zen-rotation-dial-label span {
+    opacity: 0;
+  }
+
+  & #zen-rotation-dial-label::after {
+    opacity: 0.6;
+  }
+}
+
+#zen-rotation-dial-handler-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+
+  &.zen-programmatic-change {
+    transition: transform 0.4s var(--zen-picker-ease);
+  }
+}
+
+/* Rotation handle */
+#zen-rotation-dial-handler {
+  position: absolute;
+  top: calc(var(--size-item-xsmall, 12px) / -2);
+  left: calc(50% - 3px);
+  width: 6px;
+  height: var(--size-item-xsmall, 12px);
+  border-radius: 2px;
+  background: light-dark(#757575, #d1d1d1);
+  cursor: pointer !important;
+  pointer-events: all;
+  transition: height 0.1s;
+
+  &:hover {
+    height: 14px;
+    cursor: pointer !important;
+  }
+}
+
+#zen-rotation-dial-wrapper[disabled] #zen-rotation-dial-handler {
+  cursor: default !important;
+  pointer-events: none;
+}
+
+/* Grain: click the center to reset */
+#PanelUI-zen-gradient-generator-texture-wrapper {
+  position: relative;
+  cursor: default;
+
+  &.knob-hover {
+    cursor: pointer;
+  }
+
+  &.knob-hover #zen-grain-reset-label::after {
+    opacity: 0.6;
+  }
+}
+
+#zen-grain-reset-label {
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  font-size: 10px;
+
+  & span {
+    display: none;
+  }
+}
+
+/* Palette: buttons and the lightness slider */
+#zen-picker-palette-cycle,
+#zen-picker-favorite-save,
+#zen-picker-randomize {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: none;
+  margin: 0;
+  list-style-image: none;
+  appearance: none;
+  color: light-dark(rgba(0, 0, 0, 0.7), rgba(255, 255, 255, 0.9));
+  transition: background 0.2s;
+  cursor: pointer;
+
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px !important;
+  max-height: 30px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+
+  &:not([disabled]):hover {
+    background: var(--zen-picker-hover-surface) !important;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
+    transform: translate(-50%, -50%);
+    background: currentColor;
+    mask-image: var(--zen-picker-action-icon);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: 18px 18px;
+    pointer-events: none;
+  }
+}
+
+#zen-picker-palette-cycle {
+  --zen-picker-action-icon: var(--zen-picker-icon-palette);
+}
+
+#zen-picker-randomize {
+  --zen-picker-action-icon: var(--zen-picker-icon-wand);
+  position: absolute;
+  top: 15px;
+  left: 12px;
+  z-index: 1001;
+}
+
+#zen-picker-lightness-wrapper {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  height: 40px;
+
+  &[disabled="true"] #zen-picker-lightness-path {
+    stroke: var(--zen-picker-track-color) !important;
+  }
+}
+
+#zen-picker-lightness-slider {
+  appearance: none !important;
+  flex: 1;
+  height: 40px !important;
+  margin: 0 !important;
+  padding: 0 5px !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  z-index: 2;
+  cursor: pointer !important;
+
+  &:disabled {
+    pointer-events: none;
+    cursor: default !important;
+
+    &::-moz-range-thumb {
+      visibility: hidden;
+    }
+  }
+
+  &::-moz-range-track,
+  &::-moz-range-progress {
+    appearance: none !important;
+    background: transparent !important;
+    border: none !important;
+    height: 40px !important;
+    cursor: pointer !important;
+  }
+
+  &::-moz-range-thumb {
+    appearance: none !important;
+    background: light-dark(black, white) !important;
+    border-radius: 999px !important;
+    height: var(--zen-thumb-height, 40px) !important;
+    width: var(--zen-thumb-width, 10px) !important;
+    border: none !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform 0.5s ease;
+  }
+
+  &:hover::-moz-range-thumb {
+    transform: scale(1.1);
+    cursor: pointer !important;
+  }
+}
+
+#zen-picker-lightness-wave {
+  position: absolute;
+  left: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    width: calc(100% - 8px);
+    height: var(--size-item-small, 16px);
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background: var(--zen-picker-hover-surface);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  & svg {
+    overflow: visible;
+    min-width: calc(100% * 1.1);
+    margin-left: 4px;
+    scale: 1.2;
+  }
+}
+
+#zen-picker-lightness-path {
+  stroke-width: 8px;
+  stroke: var(--zen-picker-track-color);
+  transition: stroke 0.2s ease-out;
+}
+
+/* Favorites: heart button */
+#zen-picker-favorite-save {
+  --zen-picker-action-icon: var(--zen-picker-icon-heart-outline);
+  opacity: 1;
+
+  &[disabled] {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  &::before {
+    display: none;
+  }
+
+  & .zen-heart {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    overflow: visible;
+    pointer-events: none;
+
+    & path {
+      transform-box: view-box;
+      transform-origin: 12.0px 11.92px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      shape-rendering: geometricPrecision;
+      will-change: transform, opacity;
+    }
+  }
+
+  & .zen-heart-outline {
+    fill: none;
+    stroke: light-dark(rgba(0, 0, 0, 0.7), rgba(255, 255, 255, 0.9));
+    stroke-width: 2.2;
+    opacity: 1;
+  }
+
+  & .zen-heart-filled {
+    fill: var(--zen-picker-favorite-color);
+    stroke: var(--zen-picker-favorite-color);
+    stroke-width: 2.2; /* same as the outline */
+    opacity: 0;
+  }
+
+  &.is-favorite {
+    color: var(--zen-picker-favorite-color) !important;
+
+    & .zen-heart-outline {
+      opacity: 0;
+    }
+
+    & .zen-heart-filled {
+      opacity: 1;
+    }
+  }
+}
+
+/* Favorites: grid, slots and drag-to-reorder */
+#PanelUI-zen-gradient-generator-color-pages > hbox {
+  justify-content: space-around !important;
+  padding: 0 !important;
+}
+
+.zen-picker-favorites-page {
+  justify-content: space-between;
+  min-width: 100%;
+  padding: 0 1px;
+}
+
+.zen-picker-favorite-box {
+  position: relative;
+  box-sizing: border-box; /* the placeholder's 1px border must not make it bigger */
+  flex: none;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  max-width: 26px;
+  max-height: 26px;
+  aspect-ratio: 1 / 1;
+  margin: 2px 0;
+  border-radius: 50%;
+  box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.1);
+  overflow: visible;
+  cursor: grab;
+  transition: transform 0.1s;
+
+  /* Small heart badge on every saved gradient. */
+  &::after {
+    content: "";
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 12px;
+    height: 12px;
+    background: var(--zen-picker-favorite-color);
+    mask: var(--zen-picker-icon-heart-filled) no-repeat center / contain;
+    filter: drop-shadow(0 0 1px white);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  &:not([dragged="true"]):hover {
+    transform: scale(1.05);
+  }
+
+  &:not([dragged="true"]):active {
+    transform: scale(0.95);
+  }
+
+  /* Dot previews (--c1..--c6 are set from script). */
+  &[data-num-dots="1"] {
+    background: var(--c1);
+  }
+
+  &[data-num-dots="2"] {
+    background: linear-gradient(135deg, var(--c1), var(--c2));
+  }
+
+  &[data-num-dots="3"] {
+    background:
+      radial-gradient(circle at 0% 0%, var(--c1), transparent 100%),
+      radial-gradient(circle at 100% 0%, var(--c2), transparent 100%),
+      linear-gradient(to top, var(--c3) 0%, transparent 60%);
+  }
+
+  &[data-num-dots="4"] {
+    background:
+      radial-gradient(circle at 0% 0%, var(--c1), transparent 70%),
+      radial-gradient(circle at 100% 0%, var(--c2), transparent 70%),
+      radial-gradient(circle at 0% 100%, var(--c3), transparent 70%),
+      linear-gradient(-45deg, var(--c4) 0%, transparent 100%);
+  }
+
+  &[data-num-dots="5"] {
+    background:
+      radial-gradient(circle at 0% 0%, var(--c1), transparent 60%),
+      radial-gradient(circle at 100% 0%, var(--c2), transparent 60%),
+      radial-gradient(circle at 0% 100%, var(--c3), transparent 60%),
+      radial-gradient(circle at 100% 100%, var(--c4), transparent 60%),
+      linear-gradient(-45deg, var(--c5) 0%, transparent 100%);
+  }
+
+  &[data-num-dots="6"] {
+    background:
+      radial-gradient(circle at 0% 0%, var(--c1), transparent 60%),
+      radial-gradient(circle at 100% 0%, var(--c2), transparent 60%),
+      radial-gradient(circle at 0% 100%, var(--c3), transparent 60%),
+      radial-gradient(circle at 50% 100%, var(--c4), transparent 60%),
+      radial-gradient(circle at 100% 100%, var(--c5), transparent 60%),
+      linear-gradient(-45deg, var(--c6) 0%, transparent 100%);
+  }
+
+  /* Real preview */
+  &[data-preview-bg="true"]:not(.zen-favorite-placeholder) {
+    background: var(--zen-picker-preview-bg) !important;
+  }
+
+  /* Grain bg */
+  &[data-preview-grain="true"]:not(:is(.is-ghost, .zen-favorite-placeholder)) {
+    isolation: isolate;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background-image: url(chrome://browser/content/zen-images/grain-bg.png);
+      /* Tile the texture small and repeat it */
+      background-size: var(--zen-picker-grain-tile, 14px) var(--zen-picker-grain-tile, 14px);
+      background-repeat: repeat;
+      background-position: center;
+      image-rendering: pixelated;
+      opacity: var(--zen-picker-preview-grain, 0);
+      mix-blend-mode: hard-light;
+      pointer-events: none;
+      z-index: 1;
+    }
+  }
+
+  /* Empty slots and the slot the dragged box will land in (after the previews) */
+  &:is(.is-ghost, .zen-favorite-placeholder) {
+    --zen-picker-slot-dash: var(--zen-picker-slot-border);
+    border: none;
+    background: var(--zen-picker-slot-surface) !important;
+    box-shadow: none !important;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from -7.5deg,
+        var(--zen-picker-slot-dash) 0deg 15deg,
+        transparent 15deg 30deg
+      );
+      mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+      pointer-events: none;
+    }
+
+    &::after {
+      display: none;
+    }
+  }
+
+  /* Empty slots are inert: no hover/press scale, no pointer cursor, no clicks. */
+  &.is-ghost {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &.zen-favorite-placeholder {
+    --zen-picker-slot-dash: light-dark(rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.45));
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  /* copy that follows the pointer. */
+  &[dragged="true"] {
+    position: fixed;
+    z-index: 1;
+    margin: 0;
+    transform: none;
+    transform-origin: top left;
+    transition: none;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+  }
+}
+
+#PanelUI-zen-gradient-generator-color-pages[dragging-favorite="true"] .zen-picker-favorite-box:not(.is-ghost):not([dragged="true"]) {
+  opacity: 0.62;
+  pointer-events: none;
+}
+
+#zen-picker-favorite-drag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  cursor: grabbing;
+}

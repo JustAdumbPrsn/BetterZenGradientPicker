@@ -13,19 +13,37 @@
     {
         "type": "checkbox",
         "property": "zen.theme.dynamic-theme-switching",
-        "label": "Dynamic Theme: Browser will automatically switch between light and dark mode depending on gradient lightness. (Note: you must have light-dark switched to auto for this to work)",
-        "margin": "12px 0"
+        "label": "Dynamic Theme",
+        "margin": "12px 0 4px 0"
+    },
+    {
+        "type": "text",
+        "label": "Automatically switch between light and dark mode based on gradient lightness. Requires Zen light/dark mode set to auto.",
+        "margin": "0 0 12px 24px",
+        "size": "12px"
     },
     {
         "type": "checkbox",
         "property": "zen.theme.text-lock",
-        "label": "Text Color Lock: Browser text color (sidebar/toolbar) will strictly follow the browser's light/dark mode rather than gradient lightness.",
-        "margin": "12px 0"
+        "label": "Text Color Lock",
+        "margin": "12px 0 4px 0"
+    },
+    {
+        "type": "text",
+        "label": "Keep sidebar and toolbar text tied to the browser light/dark mode instead of the gradient brightness.",
+        "margin": "0 0 12px 24px",
+        "size": "12px"
     },
     {
         "type": "checkbox",
         "property": "zen.theme.lightness-inversion",
-        "label": "[EXPERIMENTAL] Lightness Inversion: Automatically inverts gradient lightness to match browser theme (e.g., dark gradients in dark mode).",
-        "margin": "12px 0"
+        "label": "Lightness Inversion (Experimental)",
+        "margin": "12px 0 4px 0"
+    },
+    {
+        "type": "text",
+        "label": "Invert gradient lightness to match the active browser theme, for example darker gradients in dark mode.",
+        "margin": "0 0 12px 24px",
+        "size": "12px"
     }
 ]
