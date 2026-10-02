@@ -67,7 +67,7 @@
 }
 
 #PanelUI-zen-gradient-generator .zen-theme-picker-dot.zen-dot-shake {
-  transform-origin: calc(50% + var(--ox, 0px)) calc(50% + var(--oy, 0px)) !important; /* beats Zen's author sheet */
+  transform-origin: calc(50% + var(--ox, 0px)) calc(50% + var(--oy, 0px)) !important;
   animation: zen-dot-angular-wiggle 0.6s cubic-bezier(0.4, 0, 0.2, 1) both !important;
   z-index: 2001 !important;
 }
@@ -515,7 +515,8 @@
   max-height: 26px;
   aspect-ratio: 1 / 1;
   margin: 2px 0;
-  border-radius: 50%;
+  border-radius: 50% !important;
+  corner-shape: round !important;
   box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.1);
   overflow: visible;
   cursor: grab;
@@ -600,7 +601,8 @@
       content: "";
       position: absolute;
       inset: 0;
-      border-radius: 50%;
+      border-radius: 50% !important;
+      corner-shape: round !important;
       background-image: url(chrome://browser/content/zen-images/grain-bg.png);
       /* Tile the texture small and repeat it */
       background-size: var(--zen-picker-grain-tile, 14px) var(--zen-picker-grain-tile, 14px);
@@ -626,6 +628,7 @@
       position: absolute;
       inset: 0;
       border-radius: 50%;
+      corner-shape: round !important;
       background: repeating-conic-gradient(
         from -7.5deg,
         var(--zen-picker-slot-dash) 0deg 15deg,
@@ -675,4 +678,16 @@
   inset: 0;
   z-index: 1;
   cursor: grabbing;
+}
+
+/* Gradient preview: perfect circle */
+#PanelUI-zen-gradient-generator-preview {
+  border-radius: 50% !important;
+  corner-shape: round !important;
+  clip-path: none !important;
+}
+
+#PanelUI-zen-gradient-generator-gradient {
+  border-radius: 50% !important;
+  corner-shape: round !important;
 }

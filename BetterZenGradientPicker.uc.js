@@ -3202,11 +3202,11 @@
       const box = document.createXULElement("box");
       box.setAttribute("data-fav-index", String(slotIndex));
       if (!favorite) {
-        box.className = "zen-picker-favorite-box is-ghost";
+        box.className = "zen-picker-favorite-box is-ghost no-squircles";
         return box;
       }
 
-      box.className = "zen-picker-favorite-box";
+      box.className = "zen-picker-favorite-box no-squircles";
       box.setAttribute("data-num-dots", favorite.numDots);
       box.setAttribute("tooltiptext", "Click to apply. Drag to reorder.");
       const colors = favorite.dots.map(dot => this.#getPreviewColor(dot, favorite.paletteType, favorite.lightness));
