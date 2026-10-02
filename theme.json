@@ -15,12 +15,21 @@
     "chrome": "BetterZenGradientPicker.css"
   },
   "scripts": {
-    "BetterZenGradientPicker.uc.js": {
-      "name": "BetterZenGradientPicker",
-      "description": "A complete overhaul to the gradient picker",
-      "include": ["chrome://browser/content/browser.xhtml"]
-    }
+  "BetterZenGradientPicker.uc.js": {
+    "name": "BetterZenGradientPicker",
+    "description": "A complete overhaul to the gradient picker",
+    "include": [
+      "chrome://browser/content/browser.xhtml"
+    ]
   },
+  "welcome.uc.js": {
+    "name": "Welcome",
+    "description": "Welcome promo for BetterZenGradientPicker",
+    "include": [
+      "chrome://browser/content/browser.xhtml"
+    ]
+  }
+},
   "tags": [
     "Javascript",
     "Gradient"
