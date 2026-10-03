@@ -611,7 +611,7 @@
     }
 
     & .track {
-      stop-color: var(--bgp-welcome-tile-bg);
+      stop-color: var(--bgp-welcome-track-color);
     }
   }
 
