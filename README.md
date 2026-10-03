@@ -107,5 +107,16 @@
 1. Install **Sine** if you don’t already have it  
    https://github.com/CosmoCreeper/Sine
 2. Open **Settings → Sine Mods** (or **Cosine**)
-3. Search for **BetterZenGradientPicker**
-4. Install directly from the marketplace
+3. Click the settings icon (opens sine's settings)
+   
+<img width="618" height="82" alt="image" src="https://github.com/user-attachments/assets/b1f9994a-e193-405d-b6df-36d4c1331042" />
+
+5. Check "Enable installing JS from unofficial sources. (unsafe, use at your own risk)"
+
+<img width="750" height="493" alt="image" src="https://github.com/user-attachments/assets/3c26c0f1-d6b9-4dbb-b1ec-770823a07d5f" />
+
+7. And paste this github repository link here (Use https://github.com/JustAdumbPrsn/BetterZenGradientPicker)
+
+<img width="351" height="82" alt="image" src="https://github.com/user-attachments/assets/bac8715e-796e-4496-8609-6515dcfba8d0" />
+
+
