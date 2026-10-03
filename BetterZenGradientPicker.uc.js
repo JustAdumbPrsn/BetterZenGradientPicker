@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           BetterZenGradientPicker
-// @version        2.0
+// @version        2.1
 // @description    A Sine mod which aims to overhaul Zen's gradient picker with tons of new features :))
 // @author         JustAdumbPrsn
 // @include        main
@@ -288,62 +288,65 @@
   const FAVORITE_RESTORE_MS = 800;
 
   // Heart animation constants
-  const HEART_FPS = 60;
-  const HEART_BOUNCE = 2.5;
   const HEART_PATH = "M11.9932 5.13581C9.9938 2.7984 6.65975 2.16964 4.15469 4.31001C1.64964 6.45038 1.29697 10.029 3.2642 12.5604C4.89982 14.6651 9.84977 19.1041 11.4721 20.5408C11.6536 20.7016 11.7444 20.7819 11.8502 20.8135C11.9426 20.8411 12.0437 20.8411 12.1361 20.8135C12.2419 20.7819 12.3327 20.7016 12.5142 20.5408C14.1365 19.1041 19.0865 14.6651 20.7221 12.5604C22.6893 10.029 22.3797 6.42787 19.8316 4.31001C17.2835 2.19216 13.9925 2.7984 11.9932 5.13581Z";
-  const HEART_EASE_START = [0.416, 0.44, 0.667, 1];
-  const HEART_EASE = [0.333, 0, 0.667, 1];
-  
+  const HEART_DURATION_MS = 550;
+  const HEART_TIMING = { duration: HEART_DURATION_MS };
+  const HEART_EASE_PRESS = "cubic-bezier(0.416, 0.44, 0.667, 1)";
+  const HEART_EASE = "cubic-bezier(0.333, 0, 0.667, 1)";
+
+  const HEART_SHRINK = [
+    { offset: 0, scale: 1, easing: HEART_EASE_PRESS },
+    { offset: 0.3134, scale: 0.625 },
+    { offset: 1, scale: 0.625 },
+  ];
+
+  const HEART_POP = [
+    { offset: 0, scale: 1, easing: HEART_EASE_PRESS },
+    { offset: 0.3134, scale: 0.625, easing: HEART_EASE },
+    { offset: 0.5455, scale: 1.175, easing: HEART_EASE },
+    { offset: 1, scale: 1 },
+  ];
+
   const HEART_LIKE = {
-    window: [17, 50],
-    tracks: [
-      ["outline", "transform", [[17, 100, HEART_EASE_START], [27.344, 85, null]]],
-      ["outline", "opacity", [[17, 1, "hold"], [27, 0, null]]],
+    outline: [
+      HEART_SHRINK,
       [
-        "filled",
-        "transform",
-        [[17, 100, HEART_EASE_START], [27.344, 85, HEART_EASE], [35, 107, HEART_EASE], [50, 100, null]],
+        { offset: 0, opacity: 1, easing: "step-end" },
+        { offset: 0.303, opacity: 0 },
+        { offset: 1, opacity: 0 },
       ],
-      ["filled", "opacity", [[17, 0, "hold"], [22, 0, HEART_EASE], [26, 1, null]]],
     ],
-  };
-  
-  const HEART_UNLIKE = {
-    window: [109, 142],
-    tracks: [
+    filled: [
+      HEART_POP,
       [
-        "filled",
-        "transform",
-        [[109, 100, HEART_EASE_START], [119.344, 85, null]],
+        { offset: 0, opacity: 0 },
+        { offset: 0.1515, opacity: 0, easing: HEART_EASE },
+        { offset: 0.2727, opacity: 1 },
+        { offset: 1, opacity: 1 },
       ],
-      ["filled", "opacity", [[109, 1, "hold"], [115, 1, HEART_EASE], [119, 0, null]]],
-      [
-        "outline",
-        "transform",
-        [[109, 100, HEART_EASE_START], [119.344, 85, HEART_EASE], [127, 107, HEART_EASE], [142, 100, null]],
-      ],
-      ["outline", "opacity", [[109, 0, "hold"], [117, 0, HEART_EASE], [119, 1, null]]],
     ],
   };
 
-  // Uses Web Animations API to animate the favorite heart smoothly
-  function playHeartTrack(element, property, frames, [startFrame, endFrame]) {
-    const span = endFrame - startFrame;
-    const toValue = value => (property === "transform" ? `scale(${(1 + ((value - 100) / 100) * HEART_BOUNCE).toFixed(4)})` : value);
-    const keyframes = frames.map(([frame, value, ease]) => ({
-      offset: (frame - startFrame) / span,
-      [property]: toValue(value),
-      easing: ease === "hold" ? "steps(1, end)" : ease ? `cubic-bezier(${ease.join(", ")})` : "linear",
-    }));
-    if (keyframes[0].offset > 0) {
-      keyframes.unshift({ ...keyframes[0], offset: 0, easing: "steps(1, end)" });
-    }
-    const last = keyframes[keyframes.length - 1];
-    if (last.offset < 1) {
-      keyframes.push({ ...last, offset: 1, easing: "linear" });
-    }
-    return element.animate(keyframes, { duration: (span / HEART_FPS) * 1000, fill: "forwards" });
-  }
+  const HEART_UNLIKE = {
+    filled: [
+      HEART_SHRINK,
+      [
+        { offset: 0, opacity: 1 },
+        { offset: 0.1818, opacity: 1, easing: HEART_EASE },
+        { offset: 0.303, opacity: 0 },
+        { offset: 1, opacity: 0 },
+      ],
+    ],
+    outline: [
+      HEART_POP,
+      [
+        { offset: 0, opacity: 0 },
+        { offset: 0.2424, opacity: 0, easing: HEART_EASE },
+        { offset: 0.303, opacity: 1 },
+        { offset: 1, opacity: 1 },
+      ],
+    ],
+  };
 
   const VALUE_ANIMATION_MS = 400;
   
@@ -2793,8 +2796,7 @@
     #justAddedId = null;
     #activeId = null;
     #activeLiveFingerprint = null;
-    #heartState = null; 
-    #heartAnimations = [];
+    #heartState = null;
     #restoringToken = null;
     #restoringNumDots = null;
     #applying = false;
@@ -2838,16 +2840,17 @@
       button.id = "zen-picker-favorite-save";
       button.className = "subviewbutton zen-picker-action";
       button.setAttribute("tooltiptext", "Toggle Favorite");
-      for (const type of ["mousedown", "click", "mouseup", "command"]) {
+      for (const type of ["mousedown", "mouseup"]) {
+        this.listen(button, type, event => event.stopPropagation(), { capture: true });
+      }
+      for (const type of ["click", "command"]) {
         this.listen(
           button,
           type,
           event => {
             event.stopPropagation();
-            if (type === "click" || type === "command") {
-              event.preventDefault();
-              this.#toggleFavorite();
-            }
+            event.preventDefault();
+            this.#toggleFavorite();
           },
           { capture: true }
         );
@@ -2863,29 +2866,30 @@
       actions.append(button);
     }
 
-    #playHeartAnimation(isFavorite) {
-      const heart = document.querySelector("#zen-picker-favorite-save .zen-heart");
-      if (!heart || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    #setHeartState(button, isFavorite) {
+      const changed = this.#heartState !== null && this.#heartState !== isFavorite;
+      this.#heartState = isFavorite;
+      button.classList.toggle("is-favorite", isFavorite);
+      button.setAttribute("tooltiptext", isFavorite ? "Remove from Favorites" : "Save to Favorites");
+      if (changed) {
+        this.#playHeartAnimation(button, isFavorite);
+      }
+    }
+
+    #playHeartAnimation(button, isFavorite) {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         return;
       }
-      for (const animation of this.#heartAnimations) {
+      const heart = button.querySelector(".zen-heart");
+      for (const animation of heart.getAnimations({ subtree: true })) {
         animation.cancel();
       }
-      const phase = isFavorite ? HEART_LIKE : HEART_UNLIKE;
-      const layers = {
-        outline: heart.querySelector(".zen-heart-outline"),
-        filled: heart.querySelector(".zen-heart-filled"),
-      };
-      const animations = phase.tracks.map(([layer, property, frames]) => playHeartTrack(layers[layer], property, frames, phase.window));
-      this.#heartAnimations = animations;
-      Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
-        if (this.#heartAnimations === animations) {
-          for (const animation of animations) {
-            animation.cancel();
-          }
-          this.#heartAnimations = [];
+      for (const [layer, tracks] of Object.entries(isFavorite ? HEART_LIKE : HEART_UNLIKE)) {
+        const path = heart.querySelector(`.zen-heart-${layer}`);
+        for (const keyframes of tracks) {
+          path.animate(keyframes, HEART_TIMING);
         }
-      });
+      }
     }
 
     #scheduleButtonUpdate() {
@@ -2916,14 +2920,7 @@
         return;
       }
       button.removeAttribute("disabled");
-      const isFavorite = this.#findMatches(current).length > 0;
-      const changed = this.#heartState !== null && this.#heartState !== isFavorite;
-      this.#heartState = isFavorite;
-      button.classList.toggle("is-favorite", isFavorite);
-      if (changed) {
-        this.#playHeartAnimation(isFavorite);
-      }
-      button.setAttribute("tooltiptext", isFavorite ? "Remove from Favorites" : "Save to Favorites");
+      this.#setHeartState(button, this.#findMatches(current).length > 0);
     }
 
     #showFavoritedNow() {
@@ -2932,13 +2929,7 @@
         return;
       }
       button.removeAttribute("disabled");
-      const changed = this.#heartState === false;
-      this.#heartState = true;
-      button.classList.add("is-favorite");
-      if (changed) {
-        this.#playHeartAnimation(true);
-      }
-      button.setAttribute("tooltiptext", "Remove from Favorites");
+      this.#setHeartState(button, true);
     }
 
     #getCurrentState() {
